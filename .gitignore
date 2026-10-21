@@ -1,7 +1,5 @@
 # ROS 2 / colcon generated files (including nested workspaces)
-build/
-install/
-log/
+
 
 # IDE configuration
 .idea/
