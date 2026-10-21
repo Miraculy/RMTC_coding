@@ -47,11 +47,17 @@ AiClient::AiClient(AiConfig config):config_(std::move(config)) {
     throw std::invalid_argument("AI URL must use http or https");
   if(config_.timeout_ms<100 || config_.timeout_ms>60000 || config_.budget<0 || config_.max_tokens<128)
     throw std::invalid_argument("invalid AI limits");
-  worker_=std::thread(&AiClient::run,this);
+  if(config_.provider!="gateway" && config_.provider!="deepseek")
+    throw std::invalid_argument("AI provider must be gateway or deepseek");
+  if(config_.provider=="deepseek" && config_.model.empty())config_.model="deepseek-flash";
+  curl_=curl_easy_init();if(!curl_)throw std::runtime_error("curl handle initialization failed");
+  try {worker_=std::thread(&AiClient::run,this);}
+  catch(...) {curl_easy_cleanup(curl_);throw;}
 }
 AiClient::~AiClient() {
   {std::lock_guard<std::mutex> lock(mutex_);stopping_=true;jobs_.clear();}
   cv_.notify_all();if(worker_.joinable())worker_.join();
+  curl_easy_cleanup(curl_);
 }
 void AiClient::reset(const std::string &session,const std::string &token) {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -81,8 +87,13 @@ AiResult AiClient::request(const Job &job) {
   Json body{{"messages",Json::array({{{"role","system"},{"content",prompt}},{{"role","user"},{"content",job.input.dump()}}})},
     {"max_tokens",config_.max_tokens},{"stream",false}};
   if(!config_.model.empty())body["model"]=config_.model;
+  if(config_.provider=="deepseek") {
+    body["thinking"]={{"type","disabled"}};
+    body["response_format"]={{"type","json_object"}};
+    body["temperature"]=0;
+  }
   auto payload=body.dump();std::string response;
-  CURL *curl=curl_easy_init();if(!curl){result.error="curl_init";return result;}
+  CURL *curl=curl_;curl_easy_reset(curl);
   auto auth="Authorization: Bearer "+job.token;
   curl_slist *headers=nullptr;headers=curl_slist_append(headers,"Content-Type: application/json");headers=curl_slist_append(headers,auth.c_str());
   curl_easy_setopt(curl,CURLOPT_URL,config_.url.c_str());
@@ -92,9 +103,10 @@ AiResult AiClient::request(const Job &job) {
   curl_easy_setopt(curl,CURLOPT_TIMEOUT_MS,static_cast<long>(config_.timeout_ms));
   curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT_MS,3000L);
   curl_easy_setopt(curl,CURLOPT_NOSIGNAL,1L);curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,0L);
+  curl_easy_setopt(curl,CURLOPT_TCP_KEEPALIVE,1L);
   curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,receive);curl_easy_setopt(curl,CURLOPT_WRITEDATA,&response);
   auto code=curl_easy_perform(curl);long status=0;curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&status);
-  result.http_status=static_cast<int>(status);curl_slist_free_all(headers);curl_easy_cleanup(curl);
+  result.http_status=static_cast<int>(status);curl_slist_free_all(headers);
   result.elapsed_ms=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start).count();
   if(code!=CURLE_OK){result.error="transport_"+std::to_string(code);return result;}
   result.success=status>=200 && status<300; // HTTP success consumes quota even if content is unusable.
@@ -106,7 +118,16 @@ AiResult AiClient::request(const Job &job) {
         const std::set<std::string> known{"quota_exceeded","rate_limit","concurrency_limit","missing_token","invalid_token","audit_unavailable","upstream_timeout","upstream_unavailable"};
         result.error=known.count(error)?error:"http_error";
       } else result.error="http_error";
-    } else result.parsed=decode_model(envelope.at("choices").at(0).at("message").at("content").get<std::string>());
+    } else {
+      const auto &message=envelope.at("choices").at(0).at("message");
+      if(message.contains("reasoning_content") && message["reasoning_content"].is_string())
+        result.reasoning_chars=message["reasoning_content"].get_ref<const std::string&>().size();
+      if(envelope.contains("model") && envelope["model"].is_string())result.model=envelope["model"].get<std::string>();
+      if(envelope.contains("usage") && envelope["usage"].is_object())result.usage=envelope["usage"];
+      if(envelope.at("choices").at(0).value("finish_reason",std::string{})=="length")
+        result.error="model_output_truncated";
+      else result.parsed=decode_model(message.at("content").get<std::string>());
+    }
   } catch(const std::exception &) {result.error=result.success?"model_content_invalid":"http_body_invalid";}
   return result;
 }

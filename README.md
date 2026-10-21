@@ -92,6 +92,92 @@ source install/setup.bash
 ros2 run rmtc_bot contestant --ros-args -p team:=A -p stage:=2
 ```
 
+## 正式比赛启动流程
+
+正式比赛使用 `run_contestant.sh` 连接主办方裁判和 AI 网关。`run_deepseek.sh` 用于本地练习；正式 AI 调用需要经过主办方网关，才能计入本场席位的审计记录。
+
+### 1. 赛前准备
+
+代码封存前完成构建与测试。原生 Ubuntu 成员进入本仓库根目录，使用 Bash 终端；Docker 成员先进入自己的开发容器，再进入容器内挂载的仓库根目录。维护者现有 Docker 环境示例：
+
+```bash
+docker exec -it ros2_humble_gazebo bash
+cd /root/ros2_ws
+```
+
+在仓库根目录构建：
+
+```bash
+./build_contestant.sh
+```
+
+上场前连接比赛有线网络，并取得主办方公布的本场席位、`ROS_DOMAIN_ID`、AI 网关完整请求地址、本场席位令牌、模型名称和输出 token 上限。确认本阶段总 Tick 是否调整。代码封存后按赛事要求操作，现场配置以主办方通知为准。
+
+### 2. 设置本场通信和 AI 配置
+
+在**实际运行选手程序的终端**执行以下 Bash 命令。`27` 只是 ROS 域示例，网关地址中的占位符也必须替换；若使用 Docker，应在容器内设置这些变量。
+
+```bash
+# 27 只是示例，必须按现场公布的 ROS 域修改
+export ROS_DOMAIN_ID=27
+export ROS_LOCALHOST_ONLY=0
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+
+# 正式比赛使用主办方网关
+export RMTC_AI_PROVIDER=gateway
+export AI_GATEWAY='http://<主办方网关IP>:<端口>/v1/chat/completions'
+
+# 未指定模型时，使用主办方网关的默认模型
+unset RMTC_AI_MODEL
+```
+
+如果主办方明确要求模型名称，再执行：
+
+```bash
+export RMTC_AI_MODEL='主办方指定的模型名称'
+```
+
+第二阶段在同一终端隐藏输入本场席位令牌：
+
+```bash
+read -r -s -p '请输入本场席位令牌：' RMTC_TEAM_TOKEN
+echo
+export RMTC_TEAM_TOKEN
+```
+
+第一阶段不调用 AI，可跳过模型和令牌设置。维护者现有容器原本默认 `ROS_DOMAIN_ID=0`，因此每次进入新的比赛终端都要显式设置现场公布的域。正式比赛令牌使用主办方发放的本场令牌，密钥和令牌不写进 README、参数文件或仓库。
+
+### 3. 启动对应阶段和席位
+
+第一阶段按规则使用 A 席位：
+
+```bash
+./run_contestant.sh A 1 -p team_name:=你的队名
+```
+
+第二阶段按主办方分配的席位启动，例如分配到 B：
+
+```bash
+./run_contestant.sh B 2 -p team_name:=你的队名
+```
+
+脚本两个位置参数分别是**席位、阶段**，同一席位只启动一个选手进程。默认第一阶段 100 Tick，第二阶段 500 Tick。若现场要求调整总 Tick 或 AI 输出上限，显式覆盖，以下数值仍为示例：
+
+```bash
+./run_contestant.sh B 2 \
+  -p team_name:=你的队名 \
+  -p max_ticks:=500 \
+  -p ai_max_tokens:=2500
+```
+
+### 4. 等待开始并确认接入
+
+第二阶段看到 `C++ contestant ready: team=B stage=2 AI=async` 表示节点已启动。随后确认持续收到本队感知并产生动作，后续感知中的 `self.last_action` 有对应回执，并由裁判确认本场席位的真实 AI 调用资格。节点本地的 HTTP 成功日志不能代替裁判审计。
+
+没有感知时，先检查席位、ROS 域及 DDS 网络；AI 返回 `401` 时，先检查本场席位令牌。网页或 AI 网关可访问，并不表示 ROS 话题已经双向连通。比赛开始后让程序自主运行，换场、重启或调整配置按主办方许可和赛事规则执行。
+
+当前已通过本地裁判联调和 DeepSeek 官方真实接口测试，尚未与主办方正式网关联调。应在代码封存前的官方联调中完整验证模型返回结构、输出限制和本场审计资格。
+
 ## 与练习裁判联调
 
 练习裁判由主办方单独提供，不包含在本仓库中。解压后按其说明准备环境。下面假设其目录为 `~/rmtc_practice`，请按自己的实际位置调整。
@@ -162,17 +248,56 @@ SSH 转发只处理网页和 AI HTTP 请求；ROS 话题仍依赖局域网中的
 
 正式比赛使用主办方发放的**本场席位、ROS 域、网关、模型和令牌**。程序不会自动填入练习令牌；令牌通过环境变量或私密文件提供，不提交到代码仓库。正式任务计分资格由裁判的真实调用记录确认。
 
+### 本地直接使用 DeepSeek 官方接口（关闭思考）
+
+构建后，在能够访问互联网的选手终端执行：
+
+```bash
+export ROS_DOMAIN_ID=27
+./run_deepseek.sh A 2
+```
+
+脚本会隐藏输入并询问 DeepSeek API key；也可提前设置 `DEEPSEEK_API_KEY`。它使用 `https://api.deepseek.com/chat/completions`、`deepseek-flash`，显式发送 `thinking: {type: disabled}`、JSON 输出模式和 `temperature: 0`。请求保持非流式，连接在工作线程内复用，逐 Tick 控制继续独立运行。可通过 `RMTC_AI_MODEL` 调整模型。
+
+此方式只把 AI 请求发往 DeepSeek，ROS 感知和动作仍连接本地练习裁判。使用真实服务会产生 API 费用。直连请求不会进入裁判的 AI 审计记录，**不能用它取得正式比赛的 AI 调用资格**。正式上场应在终端设置 `RMTC_AI_PROVIDER=gateway`、主办方的 `AI_GATEWAY`、`RMTC_AI_MODEL` 和 `RMTC_TEAM_TOKEN`，使用 `run_contestant.sh`。
+
+若宿主机通过代理访问互联网，容器也需要相应网络环境。可以在宿主机进入容器时传入现有变量，不要把具体代理地址写死在仓库：
+
+```bash
+docker exec -it -e HTTPS_PROXY -e https_proxy -e HTTP_PROXY -e http_proxy \
+  -e ALL_PROXY -e all_proxy -e NO_PROXY -e no_proxy ros2_humble_gazebo bash
+```
+
+容器名按自己的环境替换；代理回环地址只有在容器使用 host 网络等可达配置时才可访问。此次维护者环境的容器直连曾在 DNS 阶段超时，继承宿主机现有代理后通过实测。
+
+独立测速工具同样使用项目的 C++ `AiClient`、完整提示词和结构校验，不需要裁判，也不自动加入付费调用到单元测试中：
+
+```bash
+cmake --build build/rmtc_bot --target ai_benchmark -j 4
+read -r -s -p 'DeepSeek API key: ' DEEPSEEK_API_KEY
+echo
+export DEEPSEEK_API_KEY
+./build/rmtc_bot/ai_benchmark --live-deepseek
+# 可选：合成 ROS 感知，验证真实 AI 请求期间的连续动作回包
+source /opt/ros/humble/setup.bash
+python3 tools/deepseek_wire_test.py --live-deepseek
+unset DEEPSEEK_API_KEY
+```
+
+独立测速包含 12 个请求样例；ROS 测试使用隔离域 46、120 个 100 ms Tick、本地预算 4。均会调用真实付费 API。2026-10-21 的 12 样例响应均无思考内容，平均完整响应 1.51 秒；ROS 闭环动作往返 P95 1.40 ms。样例通过情况和测量局限见 [VALIDATION.md](VALIDATION.md)。接口参数依据 [DeepSeek 官方思考模式文档](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode/) 和 [Chat Completions 文档](https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/)。
+
 | 参数 | 默认值 / 用途 |
 | --- | --- |
 | `team` / `team_name` | `A` / `图灵探索者`，队名为 1–96 个 UTF-8 字节 |
 | `stage` / `max_ticks` | 直接启动默认 `2` / `500`；脚本第一阶段设置为 `1` / `100` |
+| `ai_provider` | `RMTC_AI_PROVIDER` 或 `gateway`；`deepseek` 模式关闭思考并启用 JSON 输出 |
 | `ai_gateway` | `AI_GATEWAY` 环境变量，未设置时使用本机 8080 的完整 completions 地址 |
-| `ai_model` | `RMTC_AI_MODEL` 环境变量；空值使用网关默认模型 |
+| `ai_model` | `RMTC_AI_MODEL` 环境变量；网关模式空值使用网关默认模型，DeepSeek 模式默认 `deepseek-flash` |
 | `ai_enabled` | `true`；第一阶段不调用 AI |
 | `ai_timeout_ms` | `12000`，请求在独立线程中执行 |
 | `ai_max_tokens` | `2500`，需符合服务方输出限制 |
 | `ai_budget` | `90`，本地成功调用预算；`0` 为不限制，网关配额仍然生效 |
-| `token_file` | 可选私密令牌文件，换场时读取；默认读 `RMTC_TEAM_TOKEN` |
+| `token_file` | 可选私密令牌文件，换场时读取；默认在网关模式读 `RMTC_TEAM_TOKEN`，DeepSeek 模式读 `DEEPSEEK_API_KEY` |
 | `log_dir` | `RMTC_LOG_DIR`，未设置时使用 `~/.rmtc-bot` |
 
 参数文件示例位于 [config/contestant.yaml](src/rmtc_bot/config/contestant.yaml)。使用时注意它自身包含席位、阶段和总 Tick，确保与当前场次一致；后面的同名参数可覆盖前面的配置：
@@ -196,6 +321,7 @@ src/rmtc_bot/
 tools/                  # 维护者环境中的开发联调脚本
 build_contestant.sh      # 构建入口
 run_contestant.sh        # 运行入口
+run_deepseek.sh          # 本地直连 DeepSeek 官方、关闭思考的运行入口
 ```
 
 规划层逐 Tick 执行动作，LLM 异步理解公开随机事件。随机事件原文不通过正则或关键词替代模型理解；模型结果经过校验后才进入本地事件状态。程序使用本队感知和公开公告，不以裁判全图或内部接口作为决策输入。
@@ -211,11 +337,11 @@ colcon test --packages-select rmtc_bot
 colcon test-result --verbose
 ```
 
-当前已通过的场次、成绩、决策耗时和验证范围见 [VALIDATION.md](VALIDATION.md)。真实 LLM 理解准确率尚未验证，当前对抗策略属于启发式基线。
+当前已通过的场次、成绩、决策耗时和验证范围见 [VALIDATION.md](VALIDATION.md)。已完成 DeepSeek 非思考的有限事件样例与合成 ROS 闭环实测；完整真实模型对抗及正式 AI 审计仍待验证，当前对抗策略属于启发式基线。
 
 `tools/integration.py` 和 `tools/wire_test.py` 目前固定使用维护者的容器路径，**不能作为任意原生环境下的通用入口**。其运行条件和命令保留在 [本地开发记录](docs/DEVELOPMENT_NOTES.md)；原生环境可以先按上面的双终端流程联调。
 
-运行日志为 JSONL，记录动作、回执、得分、任务和 AI 请求结果，不记录令牌或 HTTP 请求头。`build/`、`install/`、`log/` 和 `test-results/` 已加入 Git 忽略列表。
+运行日志为 JSONL，记录动作、回执、得分、任务和 AI 请求结果，以及模型、token 用量、思考内容长度，不记录密钥、HTTP 请求头或思考原文。`build/`、`install/`、`log/` 和 `test-results/` 已加入 Git 忽略列表。
 
 ## 可选：Docker 和 IDE
 

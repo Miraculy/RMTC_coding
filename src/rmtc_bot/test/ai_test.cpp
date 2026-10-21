@@ -22,6 +22,7 @@ public:
   }
   ~HttpFixture(){stop_=true;shutdown(fd_,SHUT_RDWR);if(thread_.joinable())thread_.join();close(fd_);}
   std::string url()const{return "http://127.0.0.1:"+std::to_string(port)+"/v1/chat/completions";}
+  Json request_body(){std::lock_guard<std::mutex> lock(request_mutex_);return request_;}
   std::atomic<int> hits{0};int port{};
 private:
   void serve() {
@@ -38,6 +39,7 @@ private:
           if(raw.size()>=header_end+4+required)break;
         }
       }
+      try {std::lock_guard<std::mutex> lock(request_mutex_);request_=Json::parse(raw.substr(header_end+4));}catch(...){}
       int index=hits.fetch_add(1);auto reply=replies_[std::min(static_cast<size_t>(index),replies_.size()-1)];
       std::this_thread::sleep_for(std::chrono::milliseconds(reply.delay_ms));
       std::string body=reply.content;
@@ -54,6 +56,7 @@ private:
     }
   }
   int fd_{};std::vector<Reply> replies_;std::atomic<bool> stop_{false};std::thread thread_;
+  std::mutex request_mutex_;Json request_;
 };
 std::vector<AiResult> await_result(AiClient &client,int expected=1) {
   std::vector<AiResult> all;auto end=std::chrono::steady_clock::now()+std::chrono::seconds(5);
@@ -73,6 +76,7 @@ TEST(Ai, ParsesPlainAndFencedJsonButRejectsSurroundingProse) {
 TEST(Ai, RejectsInvalidTransportConfiguration) {
   AiConfig c;c.url="file:///etc/passwd";EXPECT_THROW(AiClient client(c),std::exception);
   c.url="http://127.0.0.1:8080/v1/chat/completions";c.timeout_ms=0;EXPECT_THROW(AiClient client(c),std::exception);
+  c.timeout_ms=12000;c.provider="unknown";EXPECT_THROW(AiClient client(c),std::exception);
 }
 TEST(Ai, MissingTokenDoesNotEnqueueRequests) {
   AiConfig c;c.url="http://127.0.0.1:1/v1/chat/completions";AiClient client(c);
@@ -86,6 +90,23 @@ TEST(Ai, DelayedHttpDoesNotBlockSubmitAndReturnsStructuredContent) {
   EXPECT_LT(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-begin).count(),50);
   auto rows=await_result(client);ASSERT_EQ(rows.size(),1u);EXPECT_TRUE(rows[0].success);EXPECT_EQ(rows[0].parsed["session_id"],f.session);
   EXPECT_GE(rows[0].elapsed_ms,190);EXPECT_EQ(server.hits,1);
+  auto request=server.request_body();EXPECT_FALSE(request.contains("thinking"));EXPECT_FALSE(request.contains("response_format"));
+  EXPECT_FALSE(request.contains("model"));EXPECT_EQ(request["stream"],false);
+}
+TEST(Ai, DeepSeekDisablesThinkingAndRequestsJsonWithExplicitModel) {
+  HttpFixture server({{200,"structured",0}});AiConfig config;config.url=server.url();config.provider="deepseek";
+  AiClient client(config);auto f=ai_frame();client.reset(f.session,"test-token");client.submit(f,Events{},"公告","perception");
+  auto rows=await_result(client);ASSERT_EQ(rows.size(),1u);EXPECT_TRUE(rows[0].success);
+  auto request=server.request_body();EXPECT_EQ(request["model"],"deepseek-flash");
+  EXPECT_EQ(request["thinking"]["type"],"disabled");EXPECT_EQ(request["response_format"]["type"],"json_object");
+  EXPECT_EQ(request["stream"],false);EXPECT_EQ(request["temperature"],0);
+}
+TEST(Ai, TruncatedOutputIsRejectedEvenIfContentLooksValid) {
+  HttpFixture server({{200,R"({"model":"test-model","choices":[{"finish_reason":"length","message":{"reasoning_content":"","content":"{}"}}],"usage":{"completion_tokens":128}})",0}});
+  AiConfig config;config.url=server.url();AiClient client(config);auto f=ai_frame();client.reset(f.session,"test-token");
+  client.submit(f,Events{},"公告","perception");auto rows=await_result(client);ASSERT_EQ(rows.size(),1u);
+  EXPECT_TRUE(rows[0].success);EXPECT_EQ(rows[0].error,"model_output_truncated");EXPECT_EQ(rows[0].model,"test-model");
+  EXPECT_EQ(rows[0].reasoning_chars,0u);EXPECT_EQ(rows[0].usage["completion_tokens"],128);EXPECT_TRUE(rows[0].parsed.is_null());
 }
 TEST(Ai, QuotaExhaustionStopsFurtherCalls) {
   HttpFixture server({{429,R"({"error":{"code":"quota_exceeded"}})",0}});AiConfig config;config.url=server.url();AiClient client(config);

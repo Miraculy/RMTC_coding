@@ -11,8 +11,9 @@
 - 外层 Docker Compose 使用 host 网络，原有 `ROS_DOMAIN_ID=0`；练习时裁判和选手终端均显式设置为 27。
 - C++ 包是 `rmtc_bot`，可执行程序是 `contestant`。构建入口为 `build_contestant.sh`，启动入口为 `run_contestant.sh`。
 - `tools/integration.py` 固定使用 `/root/ros2_ws`、`/root/rmtc_practice`、公共域 40、内部域 41、HTTP 8081；`tools/wire_test.py` 固定使用 `/root/ros2_ws` 和公共域 44。尚未完成通用路径参数化。
-- 已通过 27 个 GTest 用例、公开 ROS 通信恢复测试、完整第一阶段及加速/正式节奏第二阶段。具体成绩、耗时与局限以 `VALIDATION.md` 为准。
-- 验证使用的是 mock AI，真实 LLM 理解准确率与正式 AI 审计资格尚未验证，不能将模拟调用算作真实资格。
+- 已通过 29 个 GTest 用例、公开 ROS 通信恢复测试、完整第一阶段及加速/正式节奏第二阶段。具体成绩、耗时与局限以 `VALIDATION.md` 为准。
+- 完整裁判场次使用 mock。2026-10-21 已通过 DeepSeek 官方 Flash 非思考的 12 个事件样例与合成 ROS 闭环；完整真实模型对抗、广泛公告准确率与正式 AI 审计资格尚未验证。
+- 本地直连入口 `run_deepseek.sh`，密钥通过 `DEEPSEEK_API_KEY` 或隐藏输入提供。容器直连外网 DNS 曾超时；继承宿主机现有代理变量后实测通过。不要写死具体代理地址，也不要将本次临时密钥保存到文档。正式比赛继续使用 `gateway` 模式和主办方网关。
 - 实现是启发式基线，后续重点是资源竞争和战术优化；不应把默认练习地图成绩表述为正式比赛保证。
 
 ## 改写前的 README 全文

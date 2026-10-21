@@ -26,8 +26,10 @@ public:
     planner_=std::make_unique<Planner>(stage_,max_ticks_);
     token_file_=declare_parameter<std::string>("token_file","");
     AiConfig config;
-    config.url=declare_parameter<std::string>("ai_gateway",env("AI_GATEWAY","http://127.0.0.1:8080/v1/chat/completions"));
-    config.model=declare_parameter<std::string>("ai_model",env("RMTC_AI_MODEL"));
+    config.provider=declare_parameter<std::string>("ai_provider",env("RMTC_AI_PROVIDER","gateway"));
+    deepseek_=config.provider=="deepseek";
+    config.url=declare_parameter<std::string>("ai_gateway",env("AI_GATEWAY",deepseek_?"https://api.deepseek.com/chat/completions":"http://127.0.0.1:8080/v1/chat/completions"));
+    config.model=declare_parameter<std::string>("ai_model",env("RMTC_AI_MODEL",deepseek_?"deepseek-flash":""));
     config.timeout_ms=declare_parameter<int>("ai_timeout_ms",12000);
     config.budget=declare_parameter<int>("ai_budget",90);
     config.max_tokens=declare_parameter<int>("ai_max_tokens",2500);
@@ -76,6 +78,7 @@ private:
       }
       record({{"kind","ai"},{"session_id",result.session},{"request_tick",result.tick},{"current_tick",world_.current.tick},
         {"http_status",result.http_status},{"http_success",result.success},{"accepted",accepted},{"error",result.error},{"elapsed_ms",result.elapsed_ms},
+        {"model",result.model},{"reasoning_chars",result.reasoning_chars},{"usage",result.usage},
         {"event_memory",accepted?world_.events.context():Json()}});
       if(result.success)ai_success_=true;
       if(accepted)RCLCPP_INFO(get_logger(),"AI event update: tick=%d events=%zu effects=%zu",world_.current.tick,world_.events.items.size(),world_.events.effects.size());
@@ -83,7 +86,7 @@ private:
     }
   }
   std::string read_token() const {
-    if(token_file_.empty())return env("RMTC_TEAM_TOKEN");
+    if(token_file_.empty())return env(deepseek_?"DEEPSEEK_API_KEY":"RMTC_TEAM_TOKEN");
     std::ifstream file(token_file_);std::string token;std::getline(file,token);
     if(!file && token.empty())throw std::runtime_error("cannot read token_file");
     if(!token.empty() && token.back()=='\r')token.pop_back();
@@ -115,7 +118,7 @@ private:
             token.clear();RCLCPP_ERROR(get_logger(),"Cannot load a valid team token; continuing local control");
           }
           ai_->reset(f.session,token);
-          if(token.empty())RCLCPP_WARN(get_logger(),"RMTC_TEAM_TOKEN is missing; official mission eligibility requires a successful match-specific AI call");
+          if(token.empty())RCLCPP_WARN(get_logger(),"AI credential is missing; set %s or token_file",deepseek_?"DEEPSEEK_API_KEY":"RMTC_TEAM_TOKEN");
         }
         record({{"kind","session"},{"session_id",f.session},{"team",team_},{"stage",stage_}});
       }
@@ -146,7 +149,7 @@ private:
   std::string team_,name_,token_file_,mission_text_,cached_;
   std::set<std::string> retired_sessions_;
   int stage_{},max_ticks_{},qualification_tick_{-100};
-  bool ai_enabled_{},ai_success_{},log_failed_{};
+  bool ai_enabled_{},ai_success_{},log_failed_{},deepseek_{};
   World world_;std::unique_ptr<Planner> planner_;std::unique_ptr<AiClient> ai_;std::ofstream log_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr action_pub_,registration_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr perception_,mission_,notices_,registry_;

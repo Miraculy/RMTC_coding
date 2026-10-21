@@ -1,5 +1,6 @@
 #pragma once
 #include "rmtc_bot/core.hpp"
+#include <curl/curl.h>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -7,12 +8,16 @@
 namespace rmtc {
 struct AiConfig {
   std::string url, model;
+  std::string provider{"gateway"};
   int timeout_ms{12000}, budget{90}, max_tokens{2500};
 };
 struct AiResult {
   std::string session, error;
   int tick{}, http_status{};
   long elapsed_ms{};
+  std::string model;
+  size_t reasoning_chars{};
+  Json usage;
   bool success{};
   Json parsed;
 };
@@ -30,6 +35,7 @@ private:
   AiResult request(const Job &job);
   void run();
   AiConfig config_;
+  CURL *curl_{}; // Used only by the worker; retains DNS/TLS/connection caches between jobs.
   std::mutex mutex_;
   std::condition_variable cv_;
   std::thread worker_;
