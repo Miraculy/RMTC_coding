@@ -1,0 +1,17 @@
+# ROS 2 / colcon generated files (including nested workspaces)
+build/
+install/
+log/
+
+# IDE configuration
+.idea/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Editor and operating system temporary files
+*.swp
+*.swo
+*~
+.DS_Store
