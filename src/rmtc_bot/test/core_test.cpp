@@ -140,6 +140,130 @@ TEST(Planner, ReversesOnlyMoveCommandUnderIllusion) {
   w.events.merge(batch(f,Json::array(),Json::array({{{"kind","illusion"},{"team","A"},{"start_tick",0},{"end_tick",10}}})),f);
   Planner p(1,100);auto a=p.decide(w);EXPECT_EQ(a.type,"move");EXPECT_EQ(a.direction,"left");
 }
+TEST(Planner, EventEscapePreservesTwoStepDeadlineInsteadOfTakingNearbyResource) {
+  World w;auto f=frame(10);f.pos={5,7};f.hp=60;
+  f.entities.push_back({"resource_high","h","",{6,7},100,20,false,false});w.update(f);
+  auto event=area("explosion",12,13,{{"damage",80}});event["rect"]={{4,4},{10,10}};
+  w.events.merge(batch(f,Json::array({event})),f);
+  Planner old;auto greedy=old.decide(w);EXPECT_EQ(greedy.type,"move");EXPECT_EQ(greedy.direction,"right");
+  PlannerConfig config;config.event_escape=true;Planner candidate(2,500,config);
+  auto a=candidate.decide(w);ASSERT_EQ(a.type,"move");EXPECT_EQ(a.direction,"left");
+  f.tick=11;f.pos={4,7};w.update(f);a=candidate.decide(w);
+  ASSERT_EQ(a.type,"move");EXPECT_EQ(a.direction,"left");
+  EXPECT_EQ(w.environmental_damage({3,7},12,false),0);
+}
+TEST(Planner, EventEscapeUsesSlackForResourcesAndHandlesReversedMovement) {
+  World w;auto f=frame(10);f.pos={5,7};f.hp=60;
+  f.entities.push_back({"resource_high","h","",{6,7},100,20,false,false});w.update(f);
+  auto event=area("explosion",14,15,{{"damage",80}});event["rect"]={{4,4},{10,10}};
+  w.events.merge(batch(f,Json::array({event})),f);
+  PlannerConfig config;config.event_escape=true;Planner candidate(2,500,config);
+  auto a=candidate.decide(w);ASSERT_EQ(a.type,"move");EXPECT_EQ(a.direction,"right");
+  f.tick=11;f.pos={6,7};f.resource_value=20;f.entities.clear();w.update(f);
+  w.events.merge(batch(f,Json::array(),Json::array({{{"kind","illusion"},{"team","A"},{"start_tick",11},{"end_tick",20}}})),f);
+  for(int tick=11;tick<14;++tick) {
+    f.tick=tick;if(tick>11)w.update(f);
+    a=candidate.decide(w);ASSERT_EQ(a.type,"move");EXPECT_EQ(a.direction,"right"); // Actual motion is left.
+    --f.pos.x;
+  }
+  EXPECT_EQ(f.pos,(Pos{3,7}));EXPECT_EQ(w.environmental_damage(f.pos,14,false),0);
+}
+TEST(Planner, EventEscapeDoesNotAbandonFiniteResourceForSurvivableFutureDamage) {
+  World w;auto f=frame(10);f.pos={5,7};
+  f.entities.push_back({"resource_high","h","",{6,7},100,20,false,false});w.update(f);
+  auto event=area("explosion",12,13,{{"damage",80}});event["rect"]={{4,4},{10,10}};
+  w.events.merge(batch(f,Json::array({event})),f);
+  PlannerConfig config;config.event_escape=true;Planner candidate(2,500,config);
+  auto a=candidate.decide(w);EXPECT_EQ(a.type,"move");EXPECT_EQ(a.direction,"right");
+}
+TEST(Planner, EventEscapeCombinesSuccessiveDamageBeforeTestingLethality) {
+  World w;auto f=frame(10);f.pos={5,7};
+  f.entities.push_back({"resource_high","h","",{6,7},100,20,false,false});w.update(f);
+  auto first=area("explosion",11,12,{{"damage",50}});first["rect"]={{0,0},{23,23}};
+  auto second=area("explosion",12,13,{{"damage",50}});second["rect"]={{4,4},{10,10}};
+  w.events.merge(batch(f,Json::array({first,second})),f);
+  PlannerConfig config;config.event_escape=true;Planner candidate(2,500,config);
+  auto a=candidate.decide(w);ASSERT_EQ(a.type,"move");EXPECT_EQ(a.direction,"left");
+  // The first blast cannot be avoided. Leave room for the second move so the
+  // combined 100 damage does not kill us, even though each blast alone is safe.
+}
+TEST(Planner, UnavoidableSurvivableEventDoesNotDistortExplorationGoal) {
+  World w;auto f=frame(10);w.update(f);
+  Planner baseline;auto expected=baseline.decide(w);const auto target=baseline.target();
+  auto event=area("explosion",11,12,{{"damage",80}});event["rect"]={{0,0},{23,23}};
+  w.events.merge(batch(f,Json::array({event})),f);
+  PlannerConfig config;config.event_escape=true;config.event_unavoidable_cost=true;Planner candidate(2,500,config);
+  auto actual=candidate.decide(w);
+  EXPECT_EQ(candidate.target(),target);EXPECT_EQ(actual.type,expected.type);EXPECT_EQ(actual.direction,expected.direction);
+  EXPECT_EQ(w.environmental_damage(f.pos,11,false),80); // The real damage remains in world state.
+}
+TEST(Planner, FrontierWindowCanPreferFullNewFootprintOverNearbyThinStrip) {
+  World w;auto f=frame(10);f.radius=1;w.update(f);
+  for(int x=0;x<f.width;++x) for(int y=0;y<f.height;++y) w.explored.insert({x,y});
+  for(int y=7;y<=9;++y) {
+    w.explored.erase({10,y});
+    for(int x=16;x<=18;++x) w.explored.erase({x,y});
+  }
+  const auto observed=w.explored;
+  Planner baseline;baseline.decide(w);ASSERT_TRUE(baseline.target());
+  PlannerConfig config;config.frontier_distance_window=true;Planner candidate(2,500,config);
+  candidate.decide(w);ASSERT_TRUE(candidate.target());
+  EXPECT_LT(baseline.target()->x,16);EXPECT_GE(candidate.target()->x,16);
+  EXPECT_EQ(candidate.reason,"explore");EXPECT_EQ(w.explored,observed);EXPECT_TRUE(w.resources.empty());
+}
+TEST(Planner, FrontierWindowPreservesKnownResourceAndStageAndLateBehavior) {
+  PlannerConfig config;config.frontier_distance_window=true;
+  World w;auto f=frame(10);f.entities.push_back({"resource_high","h","",{9,8},100,20,false,false});w.update(f);
+  Planner baseline;Planner candidate(2,500,config);
+  auto expected=baseline.decide(w),actual=candidate.decide(w);
+  EXPECT_EQ(actual.type,expected.type);EXPECT_EQ(actual.direction,expected.direction);EXPECT_EQ(candidate.target(),baseline.target());
+  EXPECT_EQ(candidate.reason,"resource");
+  for(int stage:{1,2}) {
+    World other;auto g=frame(stage==1?10:200);other.update(g);
+    Planner control(stage,500);Planner test(stage,500,config);
+    expected=control.decide(other);actual=test.decide(other);
+    EXPECT_EQ(actual.type,expected.type);EXPECT_EQ(actual.direction,expected.direction);EXPECT_EQ(test.target(),control.target());
+  }
+}
+TEST(Planner, EventEscapeRespectsWallsAndCurrentOccupiedExit) {
+  World w;auto f=frame(10);f.pos={5,7};f.hp=60;
+  f.entities.push_back({"obstacle","","",{4,7}});
+  f.entities.push_back({"robot","B","B",{5,8},100,0,false,true});
+  f.entities.push_back({"resource_high","h","",{6,7},100,20,false,false});w.update(f);
+  auto event=area("explosion",13,14,{{"damage",80}});event["rect"]={{4,4},{10,10}};
+  w.events.merge(batch(f,Json::array({event})),f);
+  PlannerConfig config;config.event_escape=true;Planner candidate(2,500,config);
+  auto a=candidate.decide(w);ASSERT_EQ(a.type,"move");EXPECT_EQ(a.direction,"up");
+  // Up, left, left avoids the known wall; down is occupied this Tick.
+}
+TEST(Planner, EventEscapePreservesProtectedAndUnavoidableCases) {
+  World w;auto f=frame(10);f.pos={5,7};f.hp=60;f.protected_spawn=true;w.update(f);
+  auto event=area("explosion",12,13,{{"damage",80}});event["rect"]={{0,0},{23,23}};
+  w.events.merge(batch(f,Json::array({event})),f);
+  PlannerConfig config;config.event_escape=true;Planner candidate(2,500,config);
+  EXPECT_NE(candidate.decide(w).type,"move");
+  f.tick=11;f.protected_spawn=false;w.update(f);
+  Planner old;auto baseline=old.decide(w),actual=candidate.decide(w);
+  EXPECT_EQ(actual.type,baseline.type);EXPECT_EQ(actual.direction,baseline.direction);
+}
+TEST(Planner, InterpretationAblationWithholdsOnlyEventsAndPreservesValidatedContext) {
+  World w;auto f=frame(10);f.pos={5,7};f.hp=60;
+  f.entities.push_back({"resource_high","h","",{6,7},100,20,false,false});w.update(f);
+  auto event=area("explosion",12,13,{{"damage",80}});event["rect"]={{4,4},{10,10}};
+  w.events.merge(batch(f,Json::array({event}),Json::array({
+    {{"kind","illusion"},{"team","A"},{"start_tick",10},{"end_tick",20}}})),f);
+  const auto context=w.events.context();const auto observed=w.explored;
+  PlannerConfig config;config.event_escape=true;
+  Planner applied(2,500,config);auto escape=applied.decide(w);
+  ASSERT_EQ(escape.type,"move");EXPECT_EQ(escape.direction,"right"); // Physical left under illusion.
+  config.use_event_interpretation=false;Planner withheld(2,500,config);
+  auto greedy=withheld.decide(w);EXPECT_EQ(greedy.type,"move");EXPECT_EQ(greedy.direction,"right");
+  EXPECT_EQ(withheld.reason,"resource");EXPECT_EQ(withheld.target(),(std::optional<Pos>{{6,7}}));
+  EXPECT_EQ(w.events.context(),context);EXPECT_EQ(w.explored,observed);EXPECT_EQ(w.history.size(),1u);
+  World no_events=w;no_events.events.clear();Planner baseline;
+  auto expected=baseline.decide(no_events);
+  EXPECT_EQ(greedy.type,expected.type);EXPECT_EQ(greedy.direction,expected.direction);
+}
 TEST(Planner, ObstacleDoesNotBlockAttackAndProtectedNearestDoes) {
   World w;auto f=frame();f.entities.push_back({"obstacle","","",{9,8}});
   f.entities.push_back({"robot","B","B",{10,8},10,0,false,false});w.update(f);
@@ -317,6 +441,32 @@ TEST(Planner, ForecastRecognizesProtectedRobotBlockingIncomingNormalShot) {
   w.update(f);PlannerConfig config;config.tactical_forecast=true;Planner p(2,500,config);
   auto action=p.decide(w);EXPECT_EQ(action.type,"move");EXPECT_EQ(action.direction,"down");
 }
+TEST(Planner, VisibleOcclusionAvoidsDefenseWithoutEnablingOpponentForecast) {
+  for(bool protected_blocker:{false,true}) {
+    World w;auto f=frame(10);f.hp=protected_blocker?15:30;
+    f.entities.push_back({"robot","C","C",{9,8},100,0,false,protected_blocker});
+    f.entities.push_back({"robot","B","B",{10,8},100,0,false,false});
+    f.entities.push_back({"resource_high","h","",{8,9},100,20,false,false});w.update(f);
+    Planner baseline;EXPECT_EQ(baseline.decide(w).type,"defend");
+    PlannerConfig config;config.ray_occlusion=true;ASSERT_FALSE(config.tactical_forecast);
+    Planner candidate(2,500,config);auto a=candidate.decide(w);
+    EXPECT_EQ(a.type,"move");EXPECT_EQ(a.direction,"down");
+    EXPECT_EQ(candidate.target(),(std::optional<Pos>{{8,9}}));
+  }
+}
+TEST(Planner, OcclusionKeepsObstacleTransparentAndUnrivaledUnblocked) {
+  PlannerConfig config;config.ray_occlusion=true;
+  World w;auto f=frame(10);f.hp=15;
+  f.entities.push_back({"obstacle","","",{9,8}});
+  f.entities.push_back({"robot","B","B",{10,8},100,0,false,false});
+  f.entities.push_back({"resource_high","h","",{8,9},100,20,false,false});w.update(f);
+  Planner candidate(2,500,config);EXPECT_EQ(candidate.decide(w).type,"defend");
+  f.tick=11;f.hp=30;f.entities.front()={"robot","C","C",{9,8},100,0,false,true};w.update(f);
+  w.events.merge(batch(f,Json::array(),Json::array({{
+    {"kind","unrivaled"},{"team","B"},{"start_tick",11},{"end_tick",20},
+    {"params",{{"attack_radius",2},{"attack_damage",50},{"defended_damage",10}}}}})),f);
+  EXPECT_EQ(candidate.decide(w).type,"defend");
+}
 TEST(Planner, ForecastWaitsForObservedMovingEnemyToEnterFiringLine) {
   World w;auto f=frame(199);f.pos={8,9};
   f.entities.push_back({"robot","B","B",{10,7},100,0,false,false});w.update(f);
@@ -354,7 +504,7 @@ TEST(Planner, ForecastDoesNotChaseUnreachableEarlyCompetitor) {
   auto action=p.decide(w);EXPECT_EQ(p.reason,"resource");
   EXPECT_EQ(action.type,"move");EXPECT_EQ(action.direction,"down");
 }
-TEST(Planner, DefaultCompetitionCueKeepsExploringAndStillTakesAvailableShot) {
+TEST(Planner, DefaultCompetitionCueKeepsExploringAndCanDisengage) {
   World w;auto f=frame(9);f.entities.push_back({"resource_normal","n","",{8,11},100,10,false,false});w.update(f);
   f.tick=10;f.entities.clear();f.entities.push_back({"robot","B","B",{8,11},100,0,false,false});w.update(f);
   ASSERT_EQ(w.recent_competition.at("B"),10);
@@ -362,14 +512,15 @@ TEST(Planner, DefaultCompetitionCueKeepsExploringAndStillTakesAvailableShot) {
   PlannerConfig previous;previous.early_interception=true;Planner opt_in(2,500,previous);
   opt_in.decide(w);EXPECT_EQ(opt_in.reason,"engage");
   f.tick=11;f.entities.front().pos={8,10};w.update(f);auto shot=current.decide(w);
-  EXPECT_EQ(shot.type,"attack");EXPECT_EQ(shot.direction,"down");
+  EXPECT_EQ(shot.type,"move");EXPECT_EQ(shot.direction,"right");EXPECT_EQ(current.reason,"explore");
 }
 TEST(Planner, DisablingEarlyInterceptionPreservesKnownResourcesAndAvailableShots) {
   World w;auto f=frame(10);
   f.entities.push_back({"robot","B","B",{10,6},100,0,false,false});
   f.entities.push_back({"resource_high","h","",{8,12},100,20,false,false});w.update(f);
   w.recent_competition["B"]=10;
-  PlannerConfig config;config.early_interception=false;config.frontier_lookahead=true;Planner p(2,500,config);
+  PlannerConfig config;config.early_interception=false;config.frontier_lookahead=true;
+  config.productive_escape=false;Planner p(2,500,config);
   auto action=p.decide(w);EXPECT_EQ(p.reason,"resource");EXPECT_EQ(action.type,"move");EXPECT_EQ(action.direction,"down");
   f.tick=11;f.entities.front().pos={8,10};f.entities.erase(f.entities.begin()+1);w.update(f);
   action=p.decide(w);EXPECT_EQ(action.type,"attack");EXPECT_EQ(action.direction,"down");
@@ -443,11 +594,36 @@ TEST(Planner, BeamExplorationDoesNotTurnPredictedVisibilityIntoObservedFacts) {
 }
 TEST(Planner, EarlyNonlethalDamageCanYieldToExplorationButLateShotsRemain) {
   World w;auto f=frame(10);f.entities.push_back({"robot","B","B",{8,10},100,0,false,false});w.update(f);
-  Planner ordinary;EXPECT_EQ(ordinary.decide(w).type,"attack");
-  PlannerConfig config;config.early_damage_scale=.25;Planner candidate(2,500,config);
+  PlannerConfig config;config.productive_escape=false;
+  Planner ordinary(2,500,config);EXPECT_EQ(ordinary.decide(w).type,"attack");
+  config.early_damage_scale=.25;Planner candidate(2,500,config);
   EXPECT_EQ(candidate.decide(w).type,"move");
   f.tick=200;w.update(f);auto action=candidate.decide(w);
   EXPECT_EQ(action.type,"attack");EXPECT_EQ(action.direction,"down");
+}
+TEST(Planner, DisprovedEnemyPositionStopsEngagementAndFallbackPursuit) {
+  World w;auto f=frame(200);f.entities.push_back({"robot","B","B",{10,8},100,0,false,false});w.update(f);
+  for(int x=0;x<f.width;++x) for(int y=0;y<f.height;++y) w.explored.insert({x,y});
+  PlannerConfig config;config.validated_enemy_memory=true;Planner candidate(2,500,config);
+  f.tick=201;f.entities.clear();w.update(f);
+  Planner old;old.decide(w);EXPECT_EQ(old.reason,"engage");
+  candidate.decide(w);EXPECT_EQ(candidate.reason,"patrol");
+  EXPECT_EQ(w.enemies.at("B").second,200); // Keep history, invalidate only the location hypothesis.
+  f.tick=207;w.update(f);old.decide(w);EXPECT_EQ(old.reason,"pursue");
+  candidate.decide(w);EXPECT_EQ(candidate.reason,"patrol");
+  f.tick=208;f.entities.push_back({"robot","B","B",{8,10},100,0,false,false});w.update(f);
+  auto action=candidate.decide(w);EXPECT_EQ(action.type,"attack");EXPECT_EQ(action.direction,"down");
+  EXPECT_EQ(w.enemies.at("B").second,208);
+}
+TEST(Planner, EnemyMemoryNeedsLiveVisibilityAndStaysDisprovedAfterLeaving) {
+  World w;auto f=frame(200);f.entities.push_back({"robot","B","B",{10,8},100,0,false,false});w.update(f);
+  for(int x=0;x<f.width;++x) for(int y=0;y<f.height;++y) w.explored.insert({x,y});
+  PlannerConfig config;config.validated_enemy_memory=true;Planner candidate(2,500,config);
+  f.tick=201;f.entities.clear();f.alive=false;w.update(f);
+  f.tick=202;f.alive=true;f.pos={4,8};w.update(f);
+  candidate.decide(w);EXPECT_EQ(candidate.reason,"engage"); // The old cell is outside live vision.
+  f.tick=203;f.pos={8,8};w.update(f);candidate.decide(w);EXPECT_EQ(candidate.reason,"patrol");
+  f.tick=204;f.pos={4,8};w.update(f);candidate.decide(w);EXPECT_EQ(candidate.reason,"patrol");
 }
 TEST(Planner, DiscountPreservesPotentialFinishersAndNecessaryDefense) {
   PlannerConfig config;config.early_damage_scale=0;

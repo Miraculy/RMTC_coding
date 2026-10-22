@@ -356,7 +356,15 @@ Planner::Planner(int stage,int max_ticks,PlannerConfig config):stage_(stage),max
     || config_.resource_lookahead<1 || config_.resource_lookahead>3)
     throw std::invalid_argument("invalid planner configuration");
 }
-Action Planner::decide(const World &w) {
+Action Planner::decide(const World &observed) {
+  // A development comparison may still make real, validated AI calls while
+  // withholding only their interpretation from action selection. Do not alter
+  // the original memory or the next model request's validated context.
+  std::optional<World> without_interpretation;
+  if(!config_.use_event_interpretation) {
+    without_interpretation=observed;without_interpretation->events.clear();
+  }
+  const World &w=without_interpretation?*without_interpretation:observed;
   const auto &f=w.current; reason="wait";
   if(!f.alive || f.tick>=max_ticks_) return {};
   for(const auto &e:w.events.items) if(e.kind=="world_split" && e.start==f.tick && w.split_line(f.pos,e)) {
@@ -364,8 +372,11 @@ Action Planner::decide(const World &w) {
   }
   const double hp=f.hp-w.environmental_damage(f.pos,f.tick,f.protected_spawn);
   if(hp<=0) {reason="pre_combat_event_death";return {};}
+  std::map<int,double> unavoidable_event_damage;
   auto event_cost=[&](Pos p,int tick,bool protected_spawn) {
     double damage=w.environmental_damage(p,tick,protected_spawn);
+    auto unavoidable=unavoidable_event_damage.find(tick);
+    if(unavoidable!=unavoidable_event_damage.end()) damage=std::max(0.0,damage-unavoidable->second);
     if(damage<=0) return 0.0;
     if(damage>=hp) return 100.0;
     // HP has no direct score value. A survivable event that leaves a healthy
@@ -376,6 +387,48 @@ Action Planner::decide(const World &w) {
   const bool forecast=config_.tactical_forecast && stage_==2
     && f.tick>=(config_.forecast_start_tick<0?max_ticks_/5:config_.forecast_start_tick);
   const int size=f.width*f.height, root=f.pos.y*f.width+f.pos.x;
+  std::vector<double> escape_damage;
+  if(stage_==2 && config_.event_escape) {
+    int horizon=f.tick;
+    for(const auto &e:w.events.items)
+      if((e.kind=="explosion" || e.kind=="world_split") && e.start>f.tick
+        && e.start<=f.tick+32 && e.start<max_ticks_) horizon=std::max(horizon,e.start);
+    if(horizon>f.tick) {
+      if(config_.event_unavoidable_cost && !f.protected_spawn) for(const auto &e:w.events.items)
+        if((e.kind=="explosion" || e.kind=="world_split") && e.start>f.tick && e.start<=horizon
+          && !unavoidable_event_damage.count(e.start)) {
+          // Even ignoring walls, every cell reachable before this activation
+          // may take the same minimum damage. That fixed loss should not bias
+          // which frontier/resource we choose. Ignore walls here deliberately:
+          // this is a lower bound, never an invented escape route.
+          double minimum=std::numeric_limits<double>::infinity();
+          for(int i=0;i<size;++i) {
+            Pos p{i%f.width,i/f.width};
+            if(distance(f.pos,p)<=e.start-f.tick)
+              minimum=std::min(minimum,w.environmental_damage(p,e.start,false));
+          }
+          unavoidable_event_damage[e.start]=minimum;
+        }
+      // Backward time layers: an action in t reaches its cell before events in
+      // t+1. Keep the least future event damage after each current action,
+      // rather than waiting until the last step to notice a wide danger zone.
+      // Future routes use remembered walls and validated event geometry only.
+      // Future robot occupancy is unknown; actual first steps are checked below.
+      escape_damage.resize(size);std::vector<double> previous(size);
+      for(int i=0;i<size;++i) escape_damage[i]=w.environmental_damage({i%f.width,i/f.width},horizon,false);
+      for(int tick=horizon-1;tick>f.tick;--tick) {
+        for(int i=0;i<size;++i) {
+          Pos p{i%f.width,i/f.width};double best=escape_damage[i]; // Waiting is allowed.
+          for(auto d:delta) {
+            Pos q=add(p,d);
+            if(!w.blocked(q,tick)) best=std::min(best,escape_damage[q.y*f.width+q.x]);
+          }
+          previous[i]=w.environmental_damage(p,tick,false)+best;
+        }
+        escape_damage.swap(previous);
+      }
+    }
+  }
   std::map<std::string,Pos> velocity;
   if(forecast && w.history.size()>1) {
     const auto &previous=w.history[w.history.size()-2];
@@ -444,6 +497,16 @@ Action Planner::decide(const World &w) {
     int i=p.y*f.width+p.x;
     if(!std::isfinite(costs[i]) || steps[i]+extra_ticks>max_ticks_-f.tick) return;
     double value=reward/std::pow(costs[i]+extra_ticks+1,.85);
+    if(config_.frontier_distance_window && stage_==2 && why=="explore"
+      && w.resources.empty() && f.tick<max_ticks_/5) {
+      // A nearby thin strip competes with a full new footprint farther away.
+      // Compare them over a travel window derived from our actual vision,
+      // keeping the original scale at one vision radius of travel. This only
+      // changes hypothetical exploration value, never observed map contents.
+      const double window=2*f.radius,reference=f.radius+1;
+      value=reward*std::pow((reference+window)/reference,.85)
+        /std::pow(costs[i]+extra_ticks+window+1,.85);
+    }
     if(target_ && p==*target_) value*=(stage_==2 && why=="explore" && target_type_=="explore")?1.5:1.12;
     if(value>best_goal) {best_goal=value;goal=p;goal_type=why;}
   };
@@ -721,9 +784,20 @@ Action Planner::decide(const World &w) {
   // Pursue reachable firing positions, not the enemy's occupied cell. Continue
   // earning legitimate damage after the point cap: it breaks otherwise tied
   // scores. Finite resources and unfinished missions retain their own value.
+  auto enemy_position_valid=[&](const std::pair<Entity,int> &record) {
+    if(!config_.validated_enemy_memory) return true;
+    // A later live observation of the old cell disproves this location. If
+    // the enemy were seen again, World would already have refreshed the record.
+    // Keep the historical record; do not infer death or a new enemy position.
+    for(auto it=w.history.rbegin();it!=w.history.rend() && it->tick>record.second;++it)
+      if(it->alive && std::abs(it->pos.x-record.first.pos.x)<=it->radius
+        && std::abs(it->pos.y-record.first.pos.y)<=it->radius) return false;
+    return true;
+  };
   if(stage_==2) {
     bool hunt=f.tick>max_ticks_/5 || w.explored.size()>static_cast<size_t>(size*.75);
     for(const auto &[team,record]:w.enemies) {
+      if(!enemy_position_valid(record)) continue;
       auto competition=w.recent_competition.find(team);
       bool contest=config_.early_interception && competition!=w.recent_competition.end() && f.tick-competition->second<=5;
       if(!hunt && !contest) continue;
@@ -770,7 +844,10 @@ Action Planner::decide(const World &w) {
     }
   }
   if(!goal && stage_==2) {
-    for(const auto &[team,record]:w.enemies) { (void)team;if(f.tick-record.second<20) offer(record.first.pos,2,"pursue"); }
+    for(const auto &[team,record]:w.enemies) {
+      (void)team;
+      if(f.tick-record.second<20 && enemy_position_valid(record)) offer(record.first.pos,2,"pursue");
+    }
     if(!goal) for(int i=0;i<size;++i) {
       Pos p{i%f.width,i/f.width};if(i==root) continue;
       auto visit=w.visits.find(p);offer(p,1.0/(1+(visit==w.visits.end()?0:visit->second)),"patrol");
@@ -863,7 +940,7 @@ Action Planner::decide(const World &w) {
     if(forecast && w.environmental_damage(v.pos,f.tick,v.protected_spawn)>=v.hp) continue;
     bool un=w.effect("unrivaled",v.team,f.tick);
     int radius=static_cast<int>(w.effect_number("unrivaled",v.team,f.tick,"attack_radius",2));
-    bool ray=forecast?normal_ray_clear(v.pos,f.pos,v.team,f.entities):aligned(v.pos,f.pos);
+    bool ray=(forecast || config_.ray_occlusion)?normal_ray_clear(v.pos,f.pos,v.team,f.entities):aligned(v.pos,f.pos);
     if((un && std::max(std::abs(v.pos.x-f.pos.x),std::abs(v.pos.y-f.pos.y))<=radius) || (!un && ray))
       incoming+=un?w.effect_number("unrivaled",v.team,f.tick,"attack_damage",50):20;
   }
@@ -925,7 +1002,7 @@ Action Planner::decide(const World &w) {
       if(forecast) for(const auto &enemy:f.entities) if(enemy.type=="robot"
         && velocity.count(enemy.team) && projected_position(enemy,1)==end) score-=.6;
       // The next activation occurs before the next move: leave danger one Tick early.
-      score-=event_cost(end,f.tick+1,false);
+      if(escape_damage.empty()) score-=event_cost(end,f.tick+1,false);
       if(stage_==2) for(const auto &e:w.events.items) if(e.active(f.tick)) {
         if(e.kind=="angel" && e.contains(end) && (!config_.event_timing || !w.effect("angel",f.team,f.tick)))
           score+=std::min(100-f.hp,e.number("heal_per_tick",10)*e.number("effect_ticks",10))*.025;
@@ -938,7 +1015,7 @@ Action Planner::decide(const World &w) {
         if(forecast && w.environmental_damage(v.pos,f.tick,v.protected_spawn)>=v.hp) continue;
         bool un=w.effect("unrivaled",v.team,f.tick);
         int radius=static_cast<int>(w.effect_number("unrivaled",v.team,f.tick,"attack_radius",2));
-        bool ray=forecast?normal_ray_clear(v.pos,f.pos,v.team,f.entities):aligned(v.pos,f.pos);
+        bool ray=(forecast || config_.ray_occlusion)?normal_ray_clear(v.pos,f.pos,v.team,f.entities):aligned(v.pos,f.pos);
         if((un && std::max(std::abs(v.pos.x-f.pos.x),std::abs(v.pos.y-f.pos.y))<=radius) || (!un && ray))
           received+=(un?w.effect_number("unrivaled",v.team,f.tick,"defended_damage",10):10)*vulnerable;
       }
@@ -1043,7 +1120,16 @@ Action Planner::decide(const World &w) {
       if(future_hp>0 && exposure>=future_hp) score-=1;
       if(goal_type=="ambush" && goal && *goal==f.pos && a.type!="move") score+=.35;
     }
-    if(a.type!="move") score-=event_cost(end,f.tick+1,f.protected_spawn);
+    if(!escape_damage.empty()) {
+      // Preserve a route out of lethal future damage. Survivable damage keeps
+      // the existing one-step valuation, so advance notice does not by itself
+      // sacrifice finite resources just to preserve HP. Current combat still
+      // resolves before movement; moving cannot evade that received damage.
+      const bool protected_next=f.protected_spawn && a.type!="move";
+      if(!protected_next && received<hp && escape_damage[end.y*f.width+end.x]>=hp-received)
+        score-=100;
+      else score-=event_cost(end,f.tick+1,protected_next);
+    } else if(a.type!="move") score-=event_cost(end,f.tick+1,f.protected_spawn);
     // Collection and coordinate tasks are checked after movement. When the
     // current cell is the goal, staying alive here completes it; moving away
     // would forfeit the objective even though the route has already arrived.

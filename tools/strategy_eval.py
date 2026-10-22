@@ -132,7 +132,8 @@ def main():
                       'resource_paths_exact', 'resource_lookahead',
                       'tactical_forecast', 'forecast_start_tick', 'early_interception', 'frontier_lookahead',
                       'information_paths', 'race_aware_resources', 'resource_beam', 'transient_occupancy', 'event_timing',
-                      'ai_action_revision', 'revision_window_ms', 'productive_escape'}
+                      'ai_action_revision', 'revision_window_ms', 'productive_escape', 'validated_enemy_memory', 'event_escape',
+                      'use_event_interpretation', 'event_unavoidable_cost', 'frontier_distance_window', 'ray_occlusion'}
     if any(p.partition(':=')[0] not in allowed_params or ':=' not in p for p in args.param):
         parser.error('--param only accepts the documented planner parameters')
     if args.ai != 'off' and args.tick_ms < 500:
@@ -215,8 +216,9 @@ def main():
         config = copy.deepcopy(template)
         if args.no_events:
             config['events']['enabled'] = False
-        geometry_name = name.removesuffix('-standard') if name.endswith('-standard') else name.removesuffix('-illusion')
-        if name.endswith('-standard'):
+        suffix = next((s for s in ('-standard', '-illusion', '-blast-early', '-blast-long', '-blast') if name.endswith(s)), '')
+        geometry_name = name.removesuffix(suffix) if suffix else name
+        if suffix in ('-standard', '-blast', '-blast-long', '-blast-early'):
             apply_standard_event_values(config)
         if geometry_name.startswith(('map', 'interior')):
             interior = geometry_name.startswith('interior')
@@ -293,6 +295,17 @@ def main():
             illusion['effect_ticks'] = 40
             illusion['rect'] = {'top_left': [0, 0], 'bottom_right':
                                [config['map']['width'] - 1, config['map']['height'] - 1]}
+        if suffix in ('-blast', '-blast-long', '-blast-early'):
+            # Explicit early wide-area pressure test, not the formal schedule.
+            # Geometry depends only on map bounds, never on any car trajectory.
+            events = config['events']
+            events['announcement_delay_ticks'] = {'-blast': 9, '-blast-long': 14, '-blast-early': 10}[suffix]
+            events['announcement_count'] = 1
+            events['schedule'] = [{'id': 'early_blast', 'event': 'explosion',
+                                   'announce_tick': 0 if suffix == '-blast-early' else 1}]
+            events['definitions']['explosion']['rect'] = {
+                'top_left': [3, 3], 'bottom_right':
+                [config['map']['width'] - 4, config['map']['height'] - 4]}
         return config
 
     try:

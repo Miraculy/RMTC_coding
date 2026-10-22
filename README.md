@@ -324,6 +324,8 @@ run_contestant.sh        # 运行入口
 run_deepseek.sh          # 本地直连 DeepSeek 官方、关闭思考的运行入口
 ```
 
+第二阶段默认启用前期资源/探索过程中的有限脱离交火收益（`productive_escape=true`），可通过 `-p productive_escape:=false` 对照旧行为。其跨地图收益与退步案例见 [VALIDATION.md](VALIDATION.md)，实验开关说明见 [docs/STRATEGY.md](docs/STRATEGY.md)。
+
 规划层逐 Tick 执行动作，LLM 异步理解公开随机事件。随机事件原文不通过正则或关键词替代模型理解；模型结果经过校验后才进入本地事件状态。程序使用本队感知和公开公告，不以裁判全图或内部接口作为决策输入。
 
 模型输出被事件结构校验拒绝时，可交回 LLM 进行一次有界修复：每条公告至多一次、每场至多八次，计入原 `ai_budget`，新公告优先。修复请求仅携带原公开输入、错误分类、上次模型输出和已验证事件状态，仍须通过完整校验；日志记录 `schema_error`、`repair_attempt` 和 `repair_queued`，不保存凭据或任意异常文本。

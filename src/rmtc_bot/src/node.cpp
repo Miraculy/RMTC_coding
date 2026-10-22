@@ -40,6 +40,13 @@ public:
     planner_config.transient_occupancy=declare_parameter<bool>("transient_occupancy",true);
     planner_config.event_timing=declare_parameter<bool>("event_timing",false);
     planner_config.productive_escape=declare_parameter<bool>("productive_escape",true);
+    planner_config.validated_enemy_memory=declare_parameter<bool>("validated_enemy_memory",false);
+    planner_config.event_escape=declare_parameter<bool>("event_escape",false);
+    use_event_interpretation_=declare_parameter<bool>("use_event_interpretation",true);
+    planner_config.use_event_interpretation=use_event_interpretation_;
+    planner_config.event_unavoidable_cost=declare_parameter<bool>("event_unavoidable_cost",false);
+    planner_config.frontier_distance_window=declare_parameter<bool>("frontier_distance_window",false);
+    planner_config.ray_occlusion=declare_parameter<bool>("ray_occlusion",false);
     planner_=std::make_unique<Planner>(stage_,max_ticks_,planner_config);
     token_file_=declare_parameter<std::string>("token_file","");
     AiConfig config;
@@ -130,6 +137,7 @@ private:
       record({{"kind","ai"},{"session_id",result.session},{"request_tick",result.tick},{"current_tick",world_.current.tick},
         {"http_status",result.http_status},{"http_success",result.success},{"accepted",accepted},{"error",result.error},
         {"schema_error",schema_error},{"repair_attempt",result.repair_attempt},{"repair_queued",repair_queued},
+        {"interpretation_applied",accepted && use_event_interpretation_},
         {"elapsed_ms",result.elapsed_ms},
         {"model",result.model},{"reasoning_chars",result.reasoning_chars},{"usage",result.usage},
         {"event_memory",accepted?world_.events.context():Json()}});
@@ -198,7 +206,10 @@ private:
       std_msgs::msg::String msg;msg.data=cached_;action_pub_->publish(msg);
       double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
       auto decoded=Json::parse(raw);
-      Json observed_resources=Json::array(),observed_enemies=Json::array();
+      Json observed_resources=Json::array(),observed_enemies=Json::array(),known_obstacles=Json::array();
+      for(const auto &[pos,record]:world_.obstacles) {
+        (void)record;known_obstacles.push_back({pos.x,pos.y});
+      }
       for(const auto &e:f.entities) {
         if(e.type=="resource_normal" || e.type=="resource_high")
           observed_resources.push_back({{"id",e.id},{"position",{e.pos.x,e.pos.y}},{"value",e.value}});
@@ -211,6 +222,7 @@ private:
         {"resource_value",f.resource_value},{"effective_damage",f.effective_damage},{"completed",f.completed},{"latency_ms",elapsed},
         {"target",target?Json::array({target->x,target->y}):Json()},
         {"observed_resources",observed_resources},{"observed_enemies",observed_enemies},
+        {"known_obstacles",known_obstacles},{"map_size",{f.width,f.height}},{"vision_radius",f.radius},
         {"known_resources",world_.resources.size()},{"explored_cells",world_.explored.size()}});
     } catch(const std::exception &) {
       // Never guess a session or Tick after malformed input. Error bodies may contain secrets.
@@ -223,7 +235,7 @@ private:
   int stage_{},max_ticks_{},qualification_tick_{-100};
   int revision_window_ms_{350},cached_tick_{-1},revised_tick_{-1};
   std::chrono::steady_clock::time_point frame_received_{};
-  bool ai_action_revision_{};
+  bool ai_action_revision_{},use_event_interpretation_{true};
   bool ai_enabled_{},ai_success_{},log_failed_{},deepseek_{};
   World world_;std::unique_ptr<Planner> planner_;std::unique_ptr<AiClient> ai_;std::ofstream log_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr action_pub_,registration_;

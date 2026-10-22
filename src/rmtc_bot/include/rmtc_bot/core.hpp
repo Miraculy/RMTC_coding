@@ -114,6 +114,12 @@ struct PlannerConfig {
   bool transient_occupancy{true};
   bool event_timing{false}; // Experimental event entry/wait/residence planning.
   bool productive_escape{true}; // Early collection/exploration progress out of current fire.
+  bool validated_enemy_memory{false}; // Experimental: stop targeting disproved old positions.
+  bool event_escape{false}; // Experimental: preserve a route out before known event activation.
+  bool use_event_interpretation{true}; // Ablation only: AI calls/validation continue when false.
+  bool event_unavoidable_cost{false}; // Experimental: remove fixed future damage from route comparison.
+  bool frontier_distance_window{false}; // Experimental: compare exploration over a vision-sized travel window.
+  bool ray_occlusion{false}; // Experimental: visible robots block incoming normal shots.
 };
 class Planner {
 public:
