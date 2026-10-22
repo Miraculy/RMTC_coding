@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <array>
 #include <deque>
+#include <exception>
 #include <map>
 #include <optional>
 #include <set>
@@ -11,6 +12,8 @@
 
 namespace rmtc {
 using Json = nlohmann::json;
+// Fixed diagnostic labels only; never returns arbitrary exception text.
+std::string model_schema_error_code(const std::exception &error);
 struct Pos {
   int x{}, y{};
   bool operator==(Pos b) const { return x == b.x && y == b.y; }
@@ -90,17 +93,39 @@ public:
   std::map<Pos, Obstacle> obstacles;
   std::map<std::string, Resource> resources;
   std::map<std::string, std::pair<Entity,int>> enemies;
+  std::map<std::string,int> recent_competition;
   std::map<Pos,int> visits;
+  int normal_collected{}, high_collected{}; // Confirmed lower bounds from own perception.
   std::optional<Pos> spawn;
+};
+struct PlannerConfig {
+  double early_movement_scale{1.0};
+  double early_damage_scale{1.0};
+  int damage_scale_ticks{-1}; // -1: first fifth of this match.
+  bool resource_paths_exact{false};
+  int resource_lookahead{3};
+  bool tactical_forecast{false};
+  int forecast_start_tick{0}; // -1: after the first fifth; 0 preserves the full-match experiment.
+  bool early_interception{false};
+  bool frontier_lookahead{false};
+  bool information_paths{false};
+  bool race_aware_resources{false};
+  bool resource_beam{false};
+  bool transient_occupancy{true};
+  bool event_timing{false}; // Experimental event entry/wait/residence planning.
+  bool productive_escape{true}; // Early collection/exploration progress out of current fire.
 };
 class Planner {
 public:
-  explicit Planner(int stage=2, int max_ticks=500): stage_(stage), max_ticks_(max_ticks) {}
+  explicit Planner(int stage=2, int max_ticks=500, PlannerConfig config={});
   Action decide(const World &w);
-  void reset() { target_.reset(); reason = "reset"; }
+  void reset() { target_.reset(); target_type_.clear(); reason = "reset"; }
   std::string reason;
+  std::optional<Pos> target() const {return target_;}
 private:
   int stage_, max_ticks_;
+  PlannerConfig config_;
   std::optional<Pos> target_;
+  std::string target_type_;
 };
 } // namespace rmtc

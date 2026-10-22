@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iomanip>
 #include <memory>
+#include <sstream>
 
 namespace rmtc {
 std::string env(const char *key,const std::string &fallback="") {
@@ -23,7 +24,23 @@ public:
       throw std::invalid_argument("invalid team/stage/max_ticks");
     if(name_.empty() || name_.size()>96 || name_.find_first_of("\r\n")!=std::string::npos)
       throw std::invalid_argument("invalid team_name");
-    planner_=std::make_unique<Planner>(stage_,max_ticks_);
+    PlannerConfig planner_config;
+    planner_config.early_movement_scale=declare_parameter<double>("early_movement_scale",1.0);
+    planner_config.early_damage_scale=declare_parameter<double>("early_damage_scale",1.0);
+    planner_config.damage_scale_ticks=declare_parameter<int>("damage_scale_ticks",-1);
+    planner_config.resource_paths_exact=declare_parameter<bool>("resource_paths_exact",false);
+    planner_config.resource_lookahead=declare_parameter<int>("resource_lookahead",3);
+    planner_config.tactical_forecast=declare_parameter<bool>("tactical_forecast",false);
+    planner_config.forecast_start_tick=declare_parameter<int>("forecast_start_tick",0);
+    planner_config.early_interception=declare_parameter<bool>("early_interception",false);
+    planner_config.frontier_lookahead=declare_parameter<bool>("frontier_lookahead",false);
+    planner_config.information_paths=declare_parameter<bool>("information_paths",false);
+    planner_config.race_aware_resources=declare_parameter<bool>("race_aware_resources",false);
+    planner_config.resource_beam=declare_parameter<bool>("resource_beam",false);
+    planner_config.transient_occupancy=declare_parameter<bool>("transient_occupancy",true);
+    planner_config.event_timing=declare_parameter<bool>("event_timing",false);
+    planner_config.productive_escape=declare_parameter<bool>("productive_escape",true);
+    planner_=std::make_unique<Planner>(stage_,max_ticks_,planner_config);
     token_file_=declare_parameter<std::string>("token_file","");
     AiConfig config;
     config.provider=declare_parameter<std::string>("ai_provider",env("RMTC_AI_PROVIDER","gateway"));
@@ -34,6 +51,10 @@ public:
     config.budget=declare_parameter<int>("ai_budget",90);
     config.max_tokens=declare_parameter<int>("ai_max_tokens",2500);
     ai_enabled_=declare_parameter<bool>("ai_enabled",true) && stage_==2;
+    ai_action_revision_=declare_parameter<bool>("ai_action_revision",false);
+    revision_window_ms_=declare_parameter<int>("revision_window_ms",350);
+    if(revision_window_ms_<=0 || revision_window_ms_>5000)
+      throw std::invalid_argument("invalid action revision window");
     if(ai_enabled_)ai_=std::make_unique<AiClient>(config);
     auto log_dir=declare_parameter<std::string>("log_dir",env("RMTC_LOG_DIR",env("HOME","/tmp")+"/.rmtc-bot"));
     std::filesystem::create_directories(log_dir);
@@ -67,23 +88,56 @@ private:
     if(!log_ && !log_failed_) {log_failed_=true;RCLCPP_ERROR(get_logger(),"Contestant log write failed");}
   }
   void register_name() {std_msgs::msg::String m;m.data=Json{{"team",team_},{"name",name_}}.dump();registration_->publish(m);}
-  void collect_ai() {
+  void revise_action() {
+    const auto &f=world_.current;
+    if(!ai_action_revision_ || revised_tick_==f.tick || cached_tick_!=f.tick
+      || cached_.empty() || f.tick>=max_ticks_)return;
+    auto age=[&]{return std::chrono::duration<double,std::milli>(
+      std::chrono::steady_clock::now()-frame_received_).count();};
+    if(age()>=revision_window_ms_)return;
+    // The executor is single-threaded. Plan against the same legal frame,
+    // without advancing observation history or changing the committed goal
+    // unless a replacement will actually be sent.
+    auto candidate=*planner_;auto action=candidate.decide(world_);
+    if(!legal(action,f,stage_))return;
+    auto replacement=action.json(f).dump();
+    if(replacement==cached_ || age()>=revision_window_ms_)return;
+    auto before=Json::parse(cached_);
+    *planner_=std::move(candidate);cached_=replacement;revised_tick_=f.tick;
+    std_msgs::msg::String message;message.data=cached_;action_pub_->publish(message);
+    auto target=planner_->target();
+    record({{"kind","action_revision"},{"session_id",f.session},{"tick",f.tick},
+      {"before",before},{"action",action.json(f)},{"frame_age_ms",age()},
+      {"reason",planner_->reason},{"target",target?Json::array({target->x,target->y}):Json()}});
+  }
+  void collect_ai(bool allow_revision=true) {
     if(!ai_)return;
+    bool changed=false;
     for(auto &result:ai_->drain()) {
       if(result.session!=world_.current.session)continue;
-      bool accepted=false;
+      bool accepted=false,repair_queued=false;std::string schema_error;
       if(result.success && result.error.empty()) {
-        try {world_.events.merge(result.parsed,world_.current);accepted=true;}
-        catch(const std::exception &) {result.error="model_schema_rejected";}
+        try {
+          auto before=world_.events.context();
+          world_.events.merge(result.parsed,world_.current);accepted=true;
+          changed=changed || before!=world_.events.context();
+        }
+        catch(const std::exception &error) {
+          result.error="model_schema_rejected";schema_error=model_schema_error_code(error);
+          repair_queued=ai_->repair_schema(result,world_.current,world_.events,schema_error);
+        }
       }
       record({{"kind","ai"},{"session_id",result.session},{"request_tick",result.tick},{"current_tick",world_.current.tick},
-        {"http_status",result.http_status},{"http_success",result.success},{"accepted",accepted},{"error",result.error},{"elapsed_ms",result.elapsed_ms},
+        {"http_status",result.http_status},{"http_success",result.success},{"accepted",accepted},{"error",result.error},
+        {"schema_error",schema_error},{"repair_attempt",result.repair_attempt},{"repair_queued",repair_queued},
+        {"elapsed_ms",result.elapsed_ms},
         {"model",result.model},{"reasoning_chars",result.reasoning_chars},{"usage",result.usage},
         {"event_memory",accepted?world_.events.context():Json()}});
       if(result.success)ai_success_=true;
       if(accepted)RCLCPP_INFO(get_logger(),"AI event update: tick=%d events=%zu effects=%zu",world_.current.tick,world_.events.items.size(),world_.events.effects.size());
       else RCLCPP_WARN(get_logger(),"AI fallback: HTTP=%d reason=%s",result.http_status,result.error.c_str());
     }
+    if(allow_revision && changed)revise_action();
   }
   std::string read_token() const {
     if(token_file_.empty())return env(deepseek_?"DEEPSEEK_API_KEY":"RMTC_TEAM_TOKEN");
@@ -107,6 +161,7 @@ private:
       }
       if(changed && !world_.current.session.empty())retired_sessions_.insert(world_.current.session);
       world_.update(f);
+      frame_received_=start;revised_tick_=-1;cached_tick_=-1;
       if(changed) {
         planner_->reset();cached_.clear();ai_success_=false;qualification_tick_=-100;
         if(ai_) {
@@ -122,24 +177,41 @@ private:
         }
         record({{"kind","session"},{"session_id",f.session},{"team",team_},{"stage",stage_}});
       }
-      collect_ai();
+      collect_ai(false);
       if(f.tick>=max_ticks_) {
         record({{"kind","final"},{"session_id",f.session},{"tick",f.tick},{"resource_value",f.resource_value},{"effective_damage",f.effective_damage},{"missions",f.completed},{"ai_http_success",ai_success_}});
         RCLCPP_INFO(get_logger(),"Finished: R=%.1f D=%.1f missions=%zu AI_http=%s",f.resource_value,f.effective_damage,f.completed.size(),ai_success_?"yes":"no");return;
       }
       if(ai_) {
-        if(!f.event_text.empty())ai_->submit(f,world_.events,f.event_text,"perception");
+        // The public protocol separates recent announcements with newlines.
+        // Submit each raw notice once, instead of reinterpreting every growing
+        // history batch. Meaning and parameters remain exclusively LLM output.
+        std::istringstream notices(f.event_text);std::string notice;
+        while(std::getline(notices,notice)) if(!notice.empty())
+          ai_->submit(f,world_.events,notice,"perception");
         if(!ai_success_ && f.tick-qualification_tick_>=20) {
           if(ai_->submit(f,world_.events,mission_text_,"mission",true))qualification_tick_=f.tick;
         }
       }
       auto a=planner_->decide(world_);if(!legal(a,f,stage_))a=Action{};
-      cached_=a.json(f).dump();std_msgs::msg::String msg;msg.data=cached_;action_pub_->publish(msg);
+      cached_=a.json(f).dump();cached_tick_=f.tick;
+      std_msgs::msg::String msg;msg.data=cached_;action_pub_->publish(msg);
       double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
       auto decoded=Json::parse(raw);
+      Json observed_resources=Json::array(),observed_enemies=Json::array();
+      for(const auto &e:f.entities) {
+        if(e.type=="resource_normal" || e.type=="resource_high")
+          observed_resources.push_back({{"id",e.id},{"position",{e.pos.x,e.pos.y}},{"value",e.value}});
+        if(e.type=="robot") observed_enemies.push_back({{"team",e.team},{"position",{e.pos.x,e.pos.y}},
+          {"hp",e.hp},{"defending",e.defending},{"protected",e.protected_spawn}});
+      }
+      auto target=planner_->target();
       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},
         {"hp",f.hp},{"action",a.json(f)},{"reason",planner_->reason},{"last_action",decoded["self"].value("last_action",Json())},
-        {"resource_value",f.resource_value},{"effective_damage",f.effective_damage},{"completed",f.completed},{"latency_ms",elapsed}});
+        {"resource_value",f.resource_value},{"effective_damage",f.effective_damage},{"completed",f.completed},{"latency_ms",elapsed},
+        {"target",target?Json::array({target->x,target->y}):Json()},
+        {"observed_resources",observed_resources},{"observed_enemies",observed_enemies},
+        {"known_resources",world_.resources.size()},{"explored_cells",world_.explored.size()}});
     } catch(const std::exception &) {
       // Never guess a session or Tick after malformed input. Error bodies may contain secrets.
       RCLCPP_WARN_THROTTLE(get_logger(),*get_clock(),2000,"Perception rejected; waiting for a valid frame");
@@ -149,6 +221,9 @@ private:
   std::string team_,name_,token_file_,mission_text_,cached_;
   std::set<std::string> retired_sessions_;
   int stage_{},max_ticks_{},qualification_tick_{-100};
+  int revision_window_ms_{350},cached_tick_{-1},revised_tick_{-1};
+  std::chrono::steady_clock::time_point frame_received_{};
+  bool ai_action_revision_{};
   bool ai_enabled_{},ai_success_{},log_failed_{},deepseek_{};
   World world_;std::unique_ptr<Planner> planner_;std::unique_ptr<AiClient> ai_;std::ofstream log_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr action_pub_,registration_;

@@ -20,6 +20,9 @@ struct AiResult {
   Json usage;
   bool success{};
   Json parsed;
+  Json input; // Public request data only; never includes the bearer token.
+  std::string request_key;
+  bool repair_attempt{};
 };
 Json decode_model(const std::string &content);
 class AiClient {
@@ -29,9 +32,11 @@ public:
   void reset(const std::string &session, const std::string &token);
   bool submit(const Frame &f, const Events &events, const std::string &text,
               const std::string &source, bool qualification=false);
+  bool repair_schema(const AiResult &failed,const Frame &current,const Events &events,
+                     const std::string &diagnostic);
   std::vector<AiResult> drain();
 private:
-  struct Job { std::string session, token, key; int tick; Json input; };
+  struct Job { std::string session, token, key; int tick; Json input;bool repair{}; };
   AiResult request(const Job &job);
   void run();
   AiConfig config_;
@@ -45,5 +50,6 @@ private:
   std::deque<Job> jobs_;
   std::vector<AiResult> results_;
   std::set<std::string> seen_;
+  std::set<std::string> repairs_;
 };
 } // namespace rmtc

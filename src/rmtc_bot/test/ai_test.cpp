@@ -101,6 +101,13 @@ TEST(Ai, DeepSeekDisablesThinkingAndRequestsJsonWithExplicitModel) {
   EXPECT_EQ(request["thinking"]["type"],"disabled");EXPECT_EQ(request["response_format"]["type"],"json_object");
   EXPECT_EQ(request["stream"],false);EXPECT_EQ(request["temperature"],0);
 }
+TEST(Ai, IdenticalPublicAnnouncementAcrossSourcesIsSubmittedOnce) {
+  HttpFixture server({{200,"structured",50}});AiConfig config;config.url=server.url();
+  AiClient client(config);auto f=ai_frame();client.reset(f.session,"test-token");
+  ASSERT_TRUE(client.submit(f,Events{},"same raw notice","topic"));
+  EXPECT_FALSE(client.submit(f,Events{},"same raw notice","perception"));
+  auto rows=await_result(client);ASSERT_EQ(rows.size(),1u);EXPECT_EQ(server.hits,1);
+}
 TEST(Ai, TruncatedOutputIsRejectedEvenIfContentLooksValid) {
   HttpFixture server({{200,R"({"model":"test-model","choices":[{"finish_reason":"length","message":{"reasoning_content":"","content":"{}"}}],"usage":{"completion_tokens":128}})",0}});
   AiConfig config;config.url=server.url();AiClient client(config);auto f=ai_frame();client.reset(f.session,"test-token");
@@ -132,4 +139,42 @@ TEST(Ai, InFlightResultFromPreviousSessionIsDiscarded) {
   while(server.hits==0 && std::chrono::steady_clock::now()<deadline)std::this_thread::sleep_for(std::chrono::milliseconds(5));
   ASSERT_EQ(server.hits,1);f.session="next-match";client.reset(f.session,"next-token");client.submit(f,Events{},"new","perception");
   auto rows=await_result(client);ASSERT_EQ(rows.size(),1u);EXPECT_EQ(rows[0].session,f.session);EXPECT_EQ(rows[0].parsed["session_id"],f.session);
+}
+TEST(Ai, SchemaRepairIsBoundedBudgetedAndUsesFreshPublicContextWithoutToken) {
+  auto f=ai_frame();Json invalid{{"session_id",f.session},{"events",Json::array({
+    {{"kind","world_split"},{"start_tick",10},{"end_tick",40},{"points",Json::array()}}})},{"effects",Json::array()}};
+  auto envelope=Json{{"choices",Json::array({{{"message",{{"content",invalid.dump()}}}}})}}.dump();
+  HttpFixture server({{200,envelope,0},{200,"structured",0}});
+  AiConfig config;config.url=server.url();config.budget=2;AiClient client(config);client.reset(f.session,"test-token");
+  ASSERT_TRUE(client.submit(f,Events{},"public cleanup notice","perception"));
+  auto first=await_result(client);ASSERT_EQ(first.size(),1u);ASSERT_TRUE(first[0].success);
+  Events known;known.merge({{"session_id",f.session},{"events",Json::array({
+    {{"kind","world_split"},{"start_tick",10},{"end_tick",40},{"points",{{8,8}}}}})},{"effects",Json::array()}},f);
+  first[0].error="model_schema_rejected";f.tick=20;
+  ASSERT_TRUE(client.repair_schema(first[0],f,known,"missing_points"));
+  EXPECT_FALSE(client.repair_schema(first[0],f,known,"missing_points"));
+  auto repaired=await_result(client);ASSERT_EQ(repaired.size(),1u);EXPECT_TRUE(repaired[0].repair_attempt);
+  EXPECT_NO_THROW(known.merge(repaired[0].parsed,f));EXPECT_EQ(server.hits,2);
+  auto body=server.request_body();auto input=Json::parse(body["messages"][1]["content"].get<std::string>());
+  EXPECT_EQ(input["tick"],20);EXPECT_EQ(input["notice_tick"],0);EXPECT_EQ(input["validation_error"],"missing_points");
+  EXPECT_EQ(input["known_events"]["events"][0]["points"],Json({{8,8}}));EXPECT_EQ(input["previous_output"],invalid);
+  EXPECT_EQ(body.dump().find("test-token"),std::string::npos);
+  repaired[0].error="model_schema_rejected";EXPECT_FALSE(client.repair_schema(repaired[0],f,known,"missing_points"));
+  EXPECT_FALSE(client.submit(f,known,"next notice","perception"));
+  f.session="next-session";client.reset(f.session,"next-token");
+  EXPECT_FALSE(client.repair_schema(first[0],f,known,"missing_points"));
+}
+TEST(Ai, FreshPublicNoticeRunsBeforeQueuedSchemaRepair) {
+  HttpFixture server({{200,"structured",0},{200,"structured",150},{200,"structured",0},{200,"structured",0}});
+  AiConfig config;config.url=server.url();AiClient client(config);auto f=ai_frame();client.reset(f.session,"test-token");
+  ASSERT_TRUE(client.submit(f,Events{},"original notice","perception"));auto original=await_result(client);
+  ASSERT_EQ(original.size(),1u);original[0].error="model_schema_rejected";
+  ASSERT_TRUE(client.submit(f,Events{},"in-flight notice","perception"));
+  auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
+  while(server.hits<2 && std::chrono::steady_clock::now()<deadline)std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  ASSERT_EQ(server.hits,2);ASSERT_TRUE(client.repair_schema(original[0],f,Events{},"missing_points"));
+  ASSERT_TRUE(client.submit(f,Events{},"fresh notice","topic"));auto results=await_result(client,3);
+  ASSERT_EQ(results.size(),3u);EXPECT_EQ(results[0].request_key,"in-flight notice");
+  EXPECT_EQ(results[1].request_key,"fresh notice");EXPECT_FALSE(results[1].repair_attempt);
+  EXPECT_TRUE(results[2].repair_attempt);EXPECT_EQ(server.hits,4);
 }
