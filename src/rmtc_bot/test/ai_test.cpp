@@ -83,6 +83,24 @@ TEST(Ai, MissingTokenDoesNotEnqueueRequests) {
   Frame f;f.session="test";client.reset(f.session,"");
   EXPECT_FALSE(client.submit(f,Events{},"公告","perception"));EXPECT_TRUE(client.drain().empty());
 }
+TEST(Ai, EventRevisionsOnlyExposeLocalIdsWhenExplicitlyEnabled) {
+  for(bool enabled:{false,true}) {
+    HttpFixture server({{200,"structured",0}});AiConfig config;config.url=server.url();config.event_revisions=enabled;
+    AiClient client(config);auto f=ai_frame();client.reset(f.session,"test-token");Events events;
+    events.merge({{"session_id",f.session},{"events",Json::array({
+      {{"kind","unrivaled"},{"start_tick",10},{"end_tick",60},{"rect",{{9,9},{11,11}}}}})},
+      {"effects",Json::array()}},f);
+    ASSERT_TRUE(client.submit(f,events,"public fortress correction","perception"));
+    auto results=await_result(client);ASSERT_EQ(results.size(),1u);
+    EXPECT_EQ(results[0].input["known_events"],events.context(enabled));
+    auto request=server.request_body();auto input=Json::parse(request["messages"][1]["content"].get<std::string>());
+    EXPECT_EQ(input["known_events"]["events"][0].contains("event_id"),enabled);
+    EXPECT_EQ(input["known_events"]["events"][0].contains("revision"),enabled);
+    auto system=request["messages"][0]["content"].get<std::string>();
+    EXPECT_EQ(system.find("Versioned event memory is enabled")!=std::string::npos,enabled);
+    EXPECT_EQ(input.dump().find("test-token"),std::string::npos);
+  }
+}
 TEST(Ai, DelayedHttpDoesNotBlockSubmitAndReturnsStructuredContent) {
   HttpFixture server({{200,"structured",200}});AiConfig config;config.url=server.url();AiClient client(config);
   auto f=ai_frame();client.reset(f.session,"test-token");

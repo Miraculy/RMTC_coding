@@ -46,9 +46,20 @@ Json checked_params(const Json &j) {
   for (auto it=j.begin();it!=j.end();++it) number(it.value(),"event parameter",0,100000);
   return j;
 }
+Json event_json(const Event &e,bool versioned=false) {
+  Json r{{"kind",e.kind},{"start_tick",e.start},{"end_tick",e.end},{"params",e.params},{"points",Json::array()}};
+  for(auto p:e.points) r["points"].push_back({p.x,p.y});
+  if(e.rect) r["rect"]={{(*e.rect)[0].x,(*e.rect)[0].y},{(*e.rect)[1].x,(*e.rect)[1].y}};
+  if(versioned) {r["event_id"]=e.id;r["revision"]=e.revision;}
+  return r;
+}
 } // namespace
 
 int distance(Pos a, Pos b) { return std::abs(a.x-b.x)+std::abs(a.y-b.y); }
+double combat_score(double adjusted_damage) { return 15*std::clamp(adjusted_damage,0.0,500.0)/500; }
+double projected_damage(double previous,double attack,double reward,int deaths) {
+  return std::max(0.0,previous+attack+reward-60*deaths);
+}
 std::string model_schema_error_code(const std::exception &error) {
   if(auto json_error=dynamic_cast<const Json::exception*>(&error)) {
     if(json_error->id==302) return "json_type";
@@ -57,6 +68,8 @@ std::string model_schema_error_code(const std::exception &error) {
   }
   static const std::map<std::string,std::string> codes{
     {"invalid model schema or session","schema_or_session"},{"model batch too large","batch_limit"},
+    {"unknown event revision","event_revision_identity"},{"stale event revision","event_revision_stale"},
+    {"event revision kind mismatch","event_revision_kind"},{"duplicate event revision","event_revision_duplicate"},
     {"unknown event kind","event_kind"},{"kind: invalid string","event_kind"},
     {"invalid event rectangle","geometry_shape"},{"reversed event rectangle","geometry_order"},
     {"invalid event points","geometry_shape"},{"position must be [x,y]","position_shape"},
@@ -168,12 +181,13 @@ bool Event::contains(Pos p) const {
   return std::find(points.begin(),points.end(),p)!=points.end();
 }
 double Event::number(const std::string &key, double fallback) const { return params.value(key,fallback); }
-void Events::clear() { items.clear(); effects.clear(); }
-void Events::merge(const Json &j, const Frame &f) {
+void Events::clear() { items.clear(); effects.clear(); next_id_=0; }
+Json Events::merge(const Json &j, const Frame &f,const Json *request_context) {
   if (!j.is_object() || j.at("session_id")!=f.session || !j.at("events").is_array() || !j.at("effects").is_array())
     throw std::invalid_argument("invalid model schema or session");
   if (j["events"].size()>64 || j["effects"].size()>128) throw std::invalid_argument("model batch too large");
-  auto new_items=items; auto new_effects=effects;
+  auto new_items=items; auto new_effects=effects;int next_id=next_id_;
+  Json updates=Json::array();std::set<std::string> revised;
   for (const auto &v:j["events"]) {
     Event e; e.kind=string(v.at("kind"),"kind",32);
     if (!kinds.count(e.kind)) throw std::invalid_argument("unknown event kind");
@@ -195,10 +209,57 @@ void Events::merge(const Json &j, const Frame &f) {
     if ((e.kind=="world_split" || e.kind=="angel" || e.kind=="pepper") && e.points.empty())
       throw std::invalid_argument("event requires points");
     e.params=checked_params(v.value("params",Json::object()));
+    if(request_context && v.contains("event_id") && !v["event_id"].is_null()) {
+      auto id=string(v["event_id"],"event_id",64);
+      int revision=integer(v.at("revision"),"event revision",0,1000000);
+      const auto &known=request_context->at("events");
+      auto requested=std::find_if(known.begin(),known.end(),[&](const Json &old){
+        return old.value("event_id",std::string{})==id;
+      });
+      auto existing=std::find_if(new_items.begin(),new_items.end(),[&](const Event &old){return old.id==id;});
+      if(id.empty() || requested==known.end() || existing==new_items.end())
+        throw std::invalid_argument("unknown event revision");
+      if(!revised.insert(id).second) throw std::invalid_argument("duplicate event revision");
+      if(requested->at("revision")!=revision || existing->revision!=revision)
+        throw std::invalid_argument("stale event revision");
+      if(existing->kind!=e.kind) throw std::invalid_argument("event revision kind mismatch");
+      e.id=id;e.revision=revision;
+      if(event_json(*existing)!=event_json(e)) {
+        ++e.revision;
+        updates.push_back({{"kind","event_revision"},{"event_id",id},
+                           {"before",event_json(*existing,true)},{"after",event_json(e,true)}});
+        *existing=e;
+      }
+      continue;
+    }
     auto it=std::find_if(new_items.begin(),new_items.end(),[&](const Event &old){
       return old.kind==e.kind && old.start==e.start && old.rect==e.rect && old.points==e.points;
     });
-    if (it==new_items.end()) new_items.push_back(e); else *it=e;
+    if(it==new_items.end()) {
+      e.id="event-"+std::to_string(next_id++);
+      if(request_context) for(const auto &old:new_items)
+        if(old.kind==e.kind && old.start==e.start)
+          updates.push_back({{"kind","event_identity_ambiguous"},{"existing",event_json(old,true)},
+                             {"incoming",event_json(e,true)}});
+      new_items.push_back(e);
+    } else {
+      e.id=it->id;e.revision=it->revision;
+      if(request_context && event_json(*it)!=event_json(e)) {
+        // Preserve the legacy exact-geometry update path for parameters/end
+        // time. Geometry or activation corrections still require an explicit
+        // model reference; same kind/start alone never identifies an event.
+        const auto &known=request_context->at("events");
+        auto requested=std::find_if(known.begin(),known.end(),[&](const Json &old){
+          return old.value("event_id",std::string{})==it->id;
+        });
+        if(requested!=known.end() && requested->at("revision")!=it->revision)
+          throw std::invalid_argument("stale event revision");
+        ++e.revision;
+        updates.push_back({{"kind","event_revision"},{"identity_basis","exact_geometry"},
+          {"event_id",e.id},{"before",event_json(*it,true)},{"after",event_json(e,true)}});
+      }
+      *it=e;
+    }
   }
   for (const auto &v:j["effects"]) {
     Effect e; e.kind=string(v.at("kind"),"effect kind",32); e.team=string(v.at("team"),"effect team",1);
@@ -211,16 +272,14 @@ void Events::merge(const Json &j, const Frame &f) {
     if (it==new_effects.end()) new_effects.push_back(e); else *it=e;
   }
   if (new_items.size()>512 || new_effects.size()>2048) throw std::invalid_argument("event history limit");
-  items=std::move(new_items); effects=std::move(new_effects);
+  items=std::move(new_items); effects=std::move(new_effects);next_id_=next_id;
+  return updates;
 }
-Json Events::context() const {
+Json Events::context(bool versioned) const {
   Json out{{"events",Json::array()},{"effects",Json::array()}};
   auto begin=items.size()>32?items.size()-32:0;
   for (size_t i=begin;i<items.size();++i) {
-    const auto &e=items[i]; Json r{{"kind",e.kind},{"start_tick",e.start},{"end_tick",e.end},{"params",e.params},{"points",Json::array()}};
-    for(auto p:e.points) r["points"].push_back({p.x,p.y});
-    if(e.rect) r["rect"]={{(*e.rect)[0].x,(*e.rect)[0].y},{(*e.rect)[1].x,(*e.rect)[1].y}};
-    out["events"].push_back(r);
+    out["events"].push_back(event_json(items[i],versioned));
   }
   begin=effects.size()>32?effects.size()-32:0;
   for(size_t i=begin;i<effects.size();++i) {
@@ -353,7 +412,8 @@ Planner::Planner(int stage,int max_ticks,PlannerConfig config):stage_(stage),max
     || !std::isfinite(config_.early_damage_scale) || config_.early_damage_scale<0 || config_.early_damage_scale>1
     || config_.damage_scale_ticks< -1 || config_.damage_scale_ticks>max_ticks_
     || config_.forecast_start_tick< -1 || config_.forecast_start_tick>max_ticks_
-    || config_.resource_lookahead<1 || config_.resource_lookahead>3)
+    || config_.resource_lookahead<1 || config_.resource_lookahead>3
+    || config_.damage_reserve<0 || config_.damage_reserve>600)
     throw std::invalid_argument("invalid planner configuration");
 }
 Action Planner::decide(const World &observed) {
@@ -365,8 +425,8 @@ Action Planner::decide(const World &observed) {
     without_interpretation=observed;without_interpretation->events.clear();
   }
   const World &w=without_interpretation?*without_interpretation:observed;
-  const auto &f=w.current; reason="wait";
-  if(!f.alive || f.tick>=max_ticks_) return {};
+  const auto &f=w.current; reason="wait";goal_reason.clear();purity_evaluations=Json::array();opening_route_evaluation=Json();
+  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();return {};}
   for(const auto &e:w.events.items) if(e.kind=="world_split" && e.start==f.tick && w.split_line(f.pos,e)) {
     reason="forced_respawn"; return {};
   }
@@ -458,6 +518,18 @@ Action Planner::decide(const World &observed) {
     return true;
   };
   const double inf=std::numeric_limits<double>::infinity();
+  const bool opening_information=config_.opening_route_information && stage_==2
+    && f.tick<std::min(60,max_ticks_/5) && w.high_collected==0
+    && !config_.information_paths && !config_.resource_beam
+    && w.events.items.empty() && w.events.effects.empty()
+    && std::none_of(w.resources.begin(),w.resources.end(),[](const auto &r){return r.second.value>=20;})
+    && std::none_of(f.missions.begin(),f.missions.end(),[&](const auto &m) {
+      return m["type"]=="high_resources" && f.completed.count(m["id"].template get<std::string>());
+    });
+  // Preserve the baseline path costs, lengths and goal ordering. This mask
+  // records only alternative first steps reaching a cell at the SAME cost
+  // and Tick count. Unknown terrain remains a traversability hypothesis.
+  std::vector<unsigned char> equal_first(opening_information?size:0,0);
   std::array<double,4> first_information{};
   if(stage_==2 && config_.information_paths) for(int d=0;d<4;++d) {
     Pos next=add(f.pos,delta[d]);int novel=0;
@@ -488,11 +560,22 @@ Action Planner::decide(const World &observed) {
       if(stage_==2) for(const auto &v:f.entities)
         if(v.type=="robot" && !v.protected_spawn && aligned(q,v.pos)) extra+=.6;
       double nc=cost+extra;
-      if(nc+1e-6<costs[next]) {costs[next]=nc;steps[next]=steps[index]+1;first[next]=(index==root?d:first[index]);queue.push({nc,next});}
+      if(nc+1e-6<costs[next]) {
+        costs[next]=nc;steps[next]=steps[index]+1;first[next]=(index==root?d:first[index]);
+        if(opening_information) equal_first[next]=index==root?(1<<d):equal_first[index];
+        queue.push({nc,next});
+      } else if(opening_information && std::abs(nc-costs[next])<1e-6 && steps[next]==steps[index]+1) {
+        unsigned char mask=index==root?(1<<d):equal_first[index];
+        if(mask & ~equal_first[next]) {
+          equal_first[next]|=mask;queue.push({costs[next],next});
+        }
+      }
     }
   }
   double best_goal=-1; std::optional<Pos> goal; std::string goal_type="explore";
+  bool defer_hunt=false;
   auto offer=[&](Pos p,double reward,const std::string &why,double extra_ticks=0) {
+    if(defer_hunt && (why=="engage" || why=="ambush" || why=="pursue")) return;
     if(!w.inside(p)) return;
     int i=p.y*f.width+p.x;
     if(!std::isfinite(costs[i]) || steps[i]+extra_ticks>max_ticks_-f.tick) return;
@@ -525,6 +608,14 @@ Action Planner::decide(const World &observed) {
       int remaining=max_ticks_-f.tick;
       double reward=(f.tick>max_ticks_/3 || remaining<distance(f.pos,p)+30)?6:1;
       offer(p,reward,"mission");
+      // Only public unfinished tasks and our own remembered route are used.
+      // This defers optional pursuit goals, never immediate shots or defense.
+      if(config_.coordinate_before_hunt && f.tick>max_ticks_/3 && w.resources.empty()
+        && f.effective_damage>=500+config_.damage_reserve
+        && w.explored.size()>=static_cast<size_t>(size*.75) && w.inside(p)) {
+        int index=p.y*f.width+p.x;
+        if(std::isfinite(costs[index]) && steps[index]<=remaining) defer_hunt=true;
+      }
     }
   }
   auto task_reward=[&](double value,int normal,int high,double collected_value) {
@@ -538,8 +629,11 @@ Action Planner::decide(const World &observed) {
   };
   struct RivalRoute {Pos pos,motion;int age;bool moving;std::vector<int> steps;};
   std::vector<RivalRoute> rivals;
-  if(stage_==2 && config_.race_aware_resources) for(const auto &[team,record]:w.enemies) {
+  const bool competitive_exploration=config_.competitive_exploration && stage_==2
+    && f.tick<max_ticks_/5 && w.resources.empty();
+  if(stage_==2 && (config_.race_aware_resources || competitive_exploration)) for(const auto &[team,record]:w.enemies) {
     int age=f.tick-record.second;if(age>4) continue;
+    if(!config_.race_aware_resources && (age!=0 || record.first.hp<=0)) continue;
     RivalRoute rival{record.first.pos,{},age,false,std::vector<int>(size,-1)};
     if(age==0 && w.history.size()>1) {
       const auto &previous=w.history[w.history.size()-2];
@@ -562,6 +656,23 @@ Action Planner::decide(const World &observed) {
     }
     rivals.push_back(std::move(rival));
   }
+  std::vector<double> exploration_weights;
+  if(competitive_exploration) {
+    exploration_weights.assign(size,1);
+    for(int i=0;i<size;++i) {
+      Pos p{i%f.width,i/f.width};
+      if(w.explored.count(p) || !std::isfinite(costs[i])) continue;
+      for(const auto &rival:rivals) if(rival.age==0 && rival.steps[i]>=0
+        && rival.steps[i]<=2*f.radius && rival.steps[i]+2<steps[i]) {
+        // Earlier access is only an opportunity estimate. The rival may
+        // choose a different route; do not mark cells seen or resources gone.
+        exploration_weights[i]=.65;break;
+      }
+    }
+  }
+  auto exploration_weight=[&](int x,int y) {
+    return exploration_weights.empty()?1.0:exploration_weights[y*f.width+x];
+  };
   auto capture_probability=[&](Pos resource,double own_arrival) {
     double probability=1;
     for(const auto &rival:rivals) {
@@ -578,13 +689,40 @@ Action Planner::decide(const World &observed) {
     }
     return probability;
   };
-  struct ResourceOption {Pos pos;double reward,cost,value,task_bonus,probability,competition;int steps;};
+  auto denial_reward=[&](Pos resource,double value,int arrival) {
+    if(!config_.contested_task_resources || stage_!=2 || arrival<0 || arrival>6
+      || f.tick+arrival>=max_ticks_/5) return 0.0;
+    // A reachable own path beats even the rival's optimistic Manhattan lower
+    // bound. Current visible rivals only: neither their task progress nor their
+    // intended route is known. A small lead makes this an opportunity to test,
+    // not a prediction that the rival would actually collect this resource.
+    bool contested=false;
+    for(const auto &[team,record]:w.enemies) {
+      (void)team;if(record.second!=f.tick) continue;
+      int earliest=distance(record.first.pos,resource);
+      if(earliest>arrival && earliest<=arrival+4) {contested=true;break;}
+    }
+    if(!contested) return 0.0;
+    double reward=0;
+    for(const auto &m:f.missions) {
+      auto type=m["type"].get<std::string>();double target=std::max(1.0,m.value("target",1.0));
+      double increment=type=="normal_resources"?(value<20?1:0)
+        :(type=="high_resources"?(value>=20?1:0):(type=="resource_value"?value:0));
+      // Spread possible denied task points over three rivals. This soft
+      // opportunity value is never stored as any team's actual score.
+      reward+=5.0/3*std::min(1.0,increment/target);
+    }
+    return reward;
+  };
+  struct ResourceOption {Pos pos;double reward,cost,value,task_bonus,denial_bonus,probability,competition;int steps,seen;};
   std::vector<ResourceOption> resource_options;
   for(const auto &[id,r]:w.resources) {
     (void)id;
     double reward=stage_==1?r.value*.2:std::min(r.value,std::max(0.0,120-f.resource_value))*.25;
     double task_bonus=stage_==2?task_reward(r.value,0,0,0):0;
     reward+=task_bonus;
+    double denial_bonus=r.seen>=f.tick-1?denial_reward(r.pos,r.value,steps[r.pos.y*f.width+r.pos.x]):0;
+    reward+=denial_bonus;
     if(stage_==2) {
       // Break otherwise equal resource routes by the information acquired on
       // arrival, using only our explored cells. IDs and spawn labels carry no
@@ -619,7 +757,7 @@ Action Planner::decide(const World &observed) {
     offer(r.pos,expected,"resource");
     double cost=costs[r.pos.y*f.width+r.pos.x];
     if(stage_==2 && std::isfinite(cost) && steps[r.pos.y*f.width+r.pos.x]<=max_ticks_-f.tick)
-      resource_options.push_back({r.pos,expected,cost,r.value,task_bonus,probability,competition,steps[r.pos.y*f.width+r.pos.x]});
+      resource_options.push_back({r.pos,expected,cost,r.value,task_bonus,denial_bonus,probability,competition,steps[r.pos.y*f.width+r.pos.x],r.seen});
   }
   if(stage_==2 && config_.resource_lookahead>1) {
     // A bounded three-stop rollout values resources collected along a route.
@@ -659,7 +797,7 @@ Action Planner::decide(const World &observed) {
       double first_points=std::min(r.value,std::max(0.0,120-f.resource_value))*.25;
       double future_points=std::min(r.value,std::max(0.0,120-f.resource_value-collected_value))*.25;
       double reward=std::max(0.0,r.reward+(task_reward(r.value,normal,high,collected_value)-r.task_bonus
-        +future_points-first_points)*r.probability);
+        +future_points-first_points+((r.seen>=f.tick-1?denial_reward(r.pos,r.value,arrival):0)-r.denial_bonus))*r.probability);
       if(config_.race_aware_resources) reward*=capture_probability(r.pos,arrival)/r.competition;
       return reward;
     };
@@ -712,7 +850,7 @@ Action Planner::decide(const World &observed) {
     if(e.kind=="unrivaled" && e.rect && !w.effect("unrivaled",f.team,f.tick))
       for(int x=(*e.rect)[0].x;x<=(*e.rect)[1].x;++x) for(int y=(*e.rect)[0].y;y<=(*e.rect)[1].y;++y) {
         Pos p{x,y};int i=y*f.width+x;
-        if(!config_.event_timing) {
+        if(!config_.event_timing && !config_.fortress_time_budget) {
           if(f.tick+steps[i]+e.number("stay_ticks",10)<e.end) offer(p,5,"fortress");
         } else if(std::isfinite(costs[i])) {
           int arrival=f.tick+std::max(0,steps[i]-1);
@@ -740,9 +878,10 @@ Action Planner::decide(const World &observed) {
     && f.tick<max_ticks_/5 && w.explored.size()<static_cast<size_t>(size*.75);
   for(int i=0;i<size;++i) {
     if(i==root || !std::isfinite(costs[i])) continue;
-    Pos p{i%f.width,i/f.width}; int gain=0;
+    Pos p{i%f.width,i/f.width}; double gain=0;
     for(int x=std::max(0,p.x-f.radius);x<=std::min(f.width-1,p.x+f.radius);++x)
-      for(int y=std::max(0,p.y-f.radius);y<=std::min(f.height-1,p.y+f.radius);++y) if(!w.explored.count({x,y})) ++gain;
+      for(int y=std::max(0,p.y-f.radius);y<=std::min(f.height-1,p.y+f.radius);++y)
+        if(!w.explored.count({x,y})) gain+=exploration_weight(x,y);
     if(gain) {
       // With no known resources, value the full new footprint rather than
       // treating a thin strip along an empty edge like a large unseen region.
@@ -772,14 +911,50 @@ Action Planner::decide(const World &observed) {
       for(const auto &b:candidates) if(b.pos!=a.pos) {
         double elapsed=a.cost+distance(a.pos,b.pos);
         if(elapsed>max_ticks_-f.tick) continue;
-        int novel=0;
+        double novel=0;
         for(int x=std::max(0,b.pos.x-f.radius);x<=std::min(f.width-1,b.pos.x+f.radius);++x)
           for(int y=std::max(0,b.pos.y-f.radius);y<=std::min(f.height-1,b.pos.y+f.radius);++y)
-            if(!w.explored.count({x,y}) && (std::abs(x-a.pos.x)>f.radius || std::abs(y-a.pos.y)>f.radius)) ++novel;
+            if(!w.explored.count({x,y}) && (std::abs(x-a.pos.x)>f.radius || std::abs(y-a.pos.y)>f.radius))
+              novel+=exploration_weight(x,y);
         value=std::max(value,a.reward/std::pow(a.cost+1,.85)+.55*1.3*novel/20.0/std::pow(elapsed+1,.85));
       }
       offer(a.pos,value*std::pow(a.cost+1,.85),"explore");
     }
+  }
+  if(config_.respawn_task_route && stage_==2 && f.tick>=max_ticks_/3) {
+    auto reachable_task=[&](const Json &m) {
+      if(m["type"]!="reach" || f.completed.count(m["id"].get<std::string>())) return false;
+      Pos p{m["position"][0],m["position"][1]};if(!w.inside(p)) return false;
+      int i=p.y*f.width+p.x;
+      return std::isfinite(costs[i]) && steps[i]<=max_ticks_-f.tick;
+    };
+    if(recovery_mission_ && std::none_of(f.missions.begin(),f.missions.end(),[&](const auto &m) {
+      return m["id"]==*recovery_mission_ && reachable_task(m);
+    })) recovery_mission_.reset();
+    const auto *previous=w.at(f.tick-1),*before=w.at(f.tick-32);
+    if(!recovery_mission_ && f.protected_spawn && previous && !previous->alive && before
+      && w.explored.size()>=static_cast<size_t>(size*.75)) {
+      bool contiguous=true;
+      for(int tick=f.tick-32;tick<f.tick;++tick) if(!w.at(tick)) {contiguous=false;break;}
+      if(contiguous) {
+        // Own net combat points include deaths and the cap. This historical
+        // rate is a heuristic, not a forecast of enemies or future rewards.
+        double combat_rate=std::max(0.0,combat_score(f.effective_damage)-combat_score(before->effective_damage))/32;
+        double best_rate=combat_rate;
+        for(const auto &m:f.missions) if(reachable_task(m)) {
+          Pos p{m["position"][0],m["position"][1]};int i=p.y*f.width+p.x;
+          // Do not abandon a long remaining combat window. Start only when
+          // delaying this estimated route by one ordinary recovery cycle
+          // (three dead windows, next living action) would miss the deadline.
+          if(steps[i]+4<max_ticks_-f.tick) continue;
+          double rate=5/(costs[i]+1);
+          if(rate>best_rate+1e-9) {best_rate=rate;recovery_mission_=m["id"].get<std::string>();}
+        }
+      }
+    }
+    // Keep collecting worthwhile known resources and compare immediate combat
+    // normally. Only optional hunting goals pause during this public task route.
+    if(recovery_mission_) defer_hunt=true;
   }
   // Pursue reachable firing positions, not the enemy's occupied cell. Continue
   // earning legitimate damage after the point cap: it breaks otherwise tied
@@ -795,7 +970,12 @@ Action Planner::decide(const World &observed) {
     return true;
   };
   if(stage_==2) {
-    bool hunt=f.tick>max_ticks_/5 || w.explored.size()>static_cast<size_t>(size*.75);
+    // Crossing 75% explored is not evidence that the remaining reachable
+    // frontier has no resources. During the finite-resource window, retain
+    // an already selected exploration plan; immediate combat is scored below.
+    const bool finish_exploring=config_.finish_early_exploration && f.tick<max_ticks_/5
+      && w.resources.empty() && goal && goal_type=="explore";
+    bool hunt=f.tick>max_ticks_/5 || (w.explored.size()>static_cast<size_t>(size*.75) && !finish_exploring);
     for(const auto &[team,record]:w.enemies) {
       if(!enemy_position_valid(record)) continue;
       auto competition=w.recent_competition.find(team);
@@ -928,25 +1108,196 @@ Action Planner::decide(const World &observed) {
       }
     }
   }
-  target_=goal;target_type_=goal_type;int preferred=-1;
+  target_=goal;target_type_=goal_type;goal_reason=goal?goal_type:"";int preferred=-1;
   if(goal) preferred=first[goal->y*f.width+goal->x];
   if(searched_first) preferred=*searched_first;
+  if(opening_information && !searched_first && goal && goal_type=="resource" && preferred>=0
+    && std::any_of(w.resources.begin(),w.resources.end(),[&](const auto &r) {
+      return r.second.pos==*goal && r.second.value<20;
+    })) {
+    auto exposure=[&](int d) {
+      Pos next=add(f.pos,delta[d]);double result=0;
+      for(const auto &enemy:f.entities) if(enemy.type=="robot" && !enemy.protected_spawn
+        && aligned(next,enemy.pos)) result+=.6;
+      return result;
+    };
+    auto novel=[&](int d) {
+      Pos next=add(f.pos,delta[d]);int result=0;
+      for(int x=std::max(0,next.x-f.radius);x<=std::min(f.width-1,next.x+f.radius);++x)
+        for(int y=std::max(0,next.y-f.radius);y<=std::min(f.height-1,next.y+f.radius);++y)
+          if(!w.explored.count({x,y})) ++result;
+      return result;
+    };
+    int index=goal->y*f.width+goal->x,best=preferred,old_gain=novel(preferred),best_gain=old_gain;
+    double old_exposure=exposure(preferred);
+    // Isolate a blind first step rather than rerouting for every extra cell.
+    // Earlier broad information bonuses did not reliably improve final score.
+    for(int d=0;d<4 && old_gain==0;++d) if(equal_first[index] & (1<<d)) {
+      int gain=novel(d);
+      if(gain>best_gain && exposure(d)<=old_exposure+1e-9) {best=d;best_gain=gain;}
+    }
+    if(best!=preferred) {
+      opening_route_evaluation={{"target",{goal->x,goal->y}},{"cost",costs[index]},{"steps",steps[index]},
+        {"equal_first_mask",equal_first[index]},{"baseline_first",dirs[preferred]},{"proposed_first",dirs[best]},
+        {"baseline_new_cells",old_gain},{"proposed_new_cells",best_gain}};
+      preferred=best;
+    }
+  }
   const bool reverse=w.effect("illusion",f.team,f.tick), self_unrivaled=w.effect("unrivaled",f.team,f.tick);
   const bool purity=w.global("purity",f.tick);
+  bool current_shot=false;
+  if(config_.break_pursuit_cycles && !f.protected_spawn) for(const auto &enemy:f.entities)
+    if(enemy.type=="robot" && !enemy.protected_spawn) {
+      int range=static_cast<int>(w.effect_number("unrivaled",f.team,f.tick,"attack_radius",2));
+      if((self_unrivaled && std::max(std::abs(f.pos.x-enemy.pos.x),std::abs(f.pos.y-enemy.pos.y))<=range)
+        || (!self_unrivaled && normal_ray_clear(f.pos,enemy.pos,f.team,f.entities))) current_shot=true;
+    }
+  bool pursuit_pause=false;
+  if(config_.break_pursuit_cycles && stage_==2 && f.tick>=max_ticks_/5 && f.tick+1<max_ticks_
+    && f.effective_damage<500 && !f.protected_spawn && !current_shot && w.resources.empty()
+    && (goal_type=="engage" || goal_type=="ambush")) {
+    for(const auto &enemy:f.entities) if(enemy.type=="robot" && !enemy.protected_spawn && hp>=enemy.hp
+      && std::abs(f.pos.x-enemy.pos.x)==1 && std::abs(f.pos.y-enemy.pos.y)==1
+      && f.pos<enemy.pos) { // Geometry breaks simultaneous-wait symmetry, independent of seat labels.
+      for(int period=2;period<=8 && !pursuit_pause;++period) {
+        const Frame *before=w.at(f.tick-period);
+        if(!before || before->pos!=f.pos) continue;
+        bool complete=true;
+        Pos next_self=f.pos,next_enemy=enemy.pos;
+        for(int age=0;age<=period;++age) {
+          const Frame *past=w.at(f.tick-age);
+          if(!past || !past->alive || past->hp!=f.hp || past->resource_value!=f.resource_value
+            || past->effective_damage!=f.effective_damage || past->completed!=f.completed) {complete=false;break;}
+          auto rival=std::find_if(past->entities.begin(),past->entities.end(),[&](const auto &v) {
+            return v.type=="robot" && v.team==enemy.team;
+          });
+          if(rival==past->entities.end() || rival->protected_spawn || rival->hp!=enemy.hp
+            || (age>0 && (distance(past->pos,next_self)!=1 || distance(rival->pos,next_enemy)!=1))
+            || (age==period && rival->pos!=enemy.pos)) {complete=false;break;}
+          next_self=past->pos;next_enemy=rival->pos;
+        }
+        if(complete) pursuit_pause=true;
+      }
+    }
+  }
   double reflection=20;
   for(const auto &e:w.events.items) if(e.kind=="purity" && e.active(f.tick)) reflection=e.number("reflection_damage",20);
+  struct FireThreat {double attack,guarded,probability,probe_probability;};
+  std::vector<FireThreat> threats;
+  int uncertain_threats=0;double guarded_incoming=0;
+  std::set<std::string> probe_directions,robust_directions;
+  const Entity *probe_enemy=nullptr;
+  double probe_incoming=0;
   double incoming=0;
   if(stage_==2 && !f.protected_spawn) for(const auto &v:f.entities) if(v.type=="robot" && !v.protected_spawn) {
     if(forecast && w.environmental_damage(v.pos,f.tick,v.protected_spawn)>=v.hp) continue;
     bool un=w.effect("unrivaled",v.team,f.tick);
     int radius=static_cast<int>(w.effect_number("unrivaled",v.team,f.tick,"attack_radius",2));
     bool ray=(forecast || config_.ray_occlusion)?normal_ray_clear(v.pos,f.pos,v.team,f.entities):aligned(v.pos,f.pos);
-    if((un && std::max(std::abs(v.pos.x-f.pos.x),std::abs(v.pos.y-f.pos.y))<=radius) || (!un && ray))
-      incoming+=un?w.effect_number("unrivaled",v.team,f.tick,"attack_damage",50):20;
+    if((un && std::max(std::abs(v.pos.x-f.pos.x),std::abs(v.pos.y-f.pos.y))<=radius) || (!un && ray)) {
+      double probability=1;
+      if(config_.standoff_fire_risk && config_.score_aware_combat && !purity
+        && f.tick>=max_ticks_/5 && f.effective_damage<500 && uncertain_threats<3) {
+        bool stable=true;
+        for(int age=0;age<4;++age) {
+          const Frame *past=w.at(f.tick-age);
+          if(!past || !past->alive || past->pos!=f.pos || past->hp!=f.hp
+            || past->resource_value!=f.resource_value || past->effective_damage!=f.effective_damage
+            || past->completed!=f.completed) {stable=false;break;}
+          auto enemy=std::find_if(past->entities.begin(),past->entities.end(),[&](const auto &e) {
+            return e.type=="robot" && e.team==v.team;
+          });
+          if(enemy==past->entities.end() || !enemy->defending || enemy->protected_spawn
+            || enemy->pos!=v.pos || enemy->hp!=v.hp) {stable=false;break;}
+        }
+        // A repeated past defense is evidence, not the next action. Keep a
+        // substantial attack probability and value its lethal branch below.
+        if(stable) {probability=.25;++uncertain_threats;}
+      }
+      double attack=un?w.effect_number("unrivaled",v.team,f.tick,"attack_damage",50):20;
+      double guarded=un?w.effect_number("unrivaled",v.team,f.tick,"defended_damage",10):10;
+      double probe_probability=probability;
+      if((config_.standoff_attack_probe || config_.standoff_robust_trade) && config_.score_aware_combat && !purity
+        && !self_unrivaled && !un && hp<=20 && v.hp<=20 && f.effective_damage<500
+        && f.tick>=max_ticks_/3 && (f.tick+9<max_ticks_ || (config_.standoff_robust_trade && v.hp<=10))
+        && std::count_if(f.entities.begin(),f.entities.end(),[](const auto &e){return e.type=="robot";})==1
+        && v.hp>w.environmental_damage(v.pos,f.tick,false)
+        && normal_ray_clear(f.pos,v.pos,f.team,f.entities)) {
+        bool stable=true;
+        for(int age=0;age<8;++age) {
+          const Frame *past=w.at(f.tick-age);
+          if(!past || !past->alive || past->protected_spawn || past->pos!=f.pos || past->hp!=f.hp
+            || past->resource_value!=f.resource_value || past->effective_damage!=f.effective_damage
+            || past->completed!=f.completed) {stable=false;break;}
+          auto enemy=std::find_if(past->entities.begin(),past->entities.end(),[&](const auto &e) {
+            return e.type=="robot" && e.team==v.team;
+          });
+          if(enemy==past->entities.end() || !enemy->defending || enemy->protected_spawn
+            || enemy->pos!=v.pos || enemy->hp!=v.hp) {stable=false;break;}
+        }
+        const bool guaranteed_finisher=config_.standoff_robust_trade && v.hp<=10;
+        if(stable || guaranteed_finisher) {
+          // A heuristic, not knowledge of the next action. Only an attack
+          // actually hitting this opponent may use this separate risk model.
+          probe_probability=.25;
+          probe_enemy=&v;
+          for(int d=0;d<4;++d) {
+            Pos offset{v.pos.x-f.pos.x,v.pos.y-f.pos.y};
+            if(offset.x*delta[d].x+offset.y*delta[d].y>0) {
+              if(stable && config_.standoff_attack_probe) probe_directions.insert(dirs[d]);
+              if(config_.standoff_robust_trade) robust_directions.insert(dirs[d]);
+            }
+          }
+        }
+      }
+      threats.push_back({attack,guarded,probability,probe_probability});
+      incoming+=attack*probability;guarded_incoming+=guarded*probability;
+      probe_incoming+=attack*probe_probability;
+    }
   }
+  // Multiple simultaneous threats retain the original conservative treatment.
+  if(threats.size()!=1) {probe_directions.clear();robust_directions.clear();probe_enemy=nullptr;}
+  using DamageOutcome=std::pair<double,double>; // Raw damage, probability.
+  auto outcomes=[&](bool guarded,bool probe=false) {
+    std::vector<DamageOutcome> result{{0,1}};
+    for(const auto &threat:threats) {
+      double damage=guarded?threat.guarded:threat.attack;
+      double probability=probe?threat.probe_probability:threat.probability;
+      if(probability==1) for(auto &outcome:result) outcome.first+=damage;
+      else {
+        auto before=result;result.clear();
+        for(const auto &outcome:before) {
+          result.push_back({outcome.first,outcome.second*(1-probability)});
+          result.push_back({outcome.first+damage,outcome.second*probability});
+        }
+      }
+    }
+    return result;
+  };
+  std::vector<DamageOutcome> ordinary_risk,guarded_risk,probe_risk;
+  if(uncertain_threats) {ordinary_risk=outcomes(false);guarded_risk=outcomes(true);}
+  if(!probe_directions.empty()) probe_risk=outcomes(false,true);
   const double vulnerable=w.effect("pan",f.team,f.tick)?w.effect_number("pan",f.team,f.tick,"damage_multiplier",2):1;
+  const Entity *purity_enemy=nullptr;
+  if(config_.purity_joint_actions && config_.score_aware_combat && stage_==2 && purity
+    && !forecast && !f.protected_spawn
+    && std::count_if(f.entities.begin(),f.entities.end(),[](const auto &e){return e.type=="robot";})==1) {
+    for(const auto &enemy:f.entities) if(enemy.type=="robot" && !enemy.protected_spawn
+      && enemy.hp>w.environmental_damage(enemy.pos,f.tick,false)) {
+      // Another car outside our view must not silently turn a full kill reward
+      // into a shared reward. Allow the widest currently known area attack.
+      int contributor_radius=2;
+      for(const auto &event:w.events.items) if(event.kind=="unrivaled"
+        && event.start<=f.tick && f.tick<event.end+event.number("effect_ticks",50))
+        contributor_radius=std::max(contributor_radius,static_cast<int>(event.number("attack_radius",2)));
+      for(const auto &effect:w.events.effects) if(effect.kind=="unrivaled" && effect.start<=f.tick && f.tick<effect.end)
+        contributor_radius=std::max(contributor_radius,static_cast<int>(effect.params.value("attack_radius",2.0)));
+      if(f.radius>=std::max(std::abs(enemy.pos.x-f.pos.x),std::abs(enemy.pos.y-f.pos.y))+contributor_radius)
+        purity_enemy=&enemy;
+    }
+  }
   bool available_finisher=false;
-  if(config_.productive_escape && !f.protected_spawn) for(const auto &enemy:f.entities)
+  if((config_.productive_escape || config_.safe_progress_moves) && !f.protected_spawn) for(const auto &enemy:f.entities)
     if(enemy.type=="robot" && !enemy.protected_spawn) {
       int radius=static_cast<int>(w.effect_number("unrivaled",f.team,f.tick,"attack_radius",2));
       bool reachable=self_unrivaled?std::max(std::abs(enemy.pos.x-f.pos.x),std::abs(enemy.pos.y-f.pos.y))<=radius
@@ -955,12 +1306,80 @@ Action Planner::decide(const World &observed) {
       if(w.effect("pan",enemy.team,f.tick))damage*=w.effect_number("pan",enemy.team,f.tick,"damage_multiplier",2);
       if(reachable && damage>=enemy.hp)available_finisher=true;
     }
+  if(config_.safe_progress_moves && stage_==2 && f.tick>=max_ticks_/5 && f.tick+1<max_ticks_
+    && f.radius>=4 && !f.protected_spawn && !available_finisher && !searched_first && goal && preferred>=0
+    && (goal_type=="resource" || goal_type=="explore" || goal_type=="mission")
+    && hp>incoming*vulnerable && hp-incoming*vulnerable<=40
+    && !w.global("world_split",f.tick) && !w.global("world_split",f.tick+1)) {
+    struct FiringPosition {Pos pos;int range;bool area;};
+    std::vector<FiringPosition> firing;bool covered=true;
+    for(const auto &enemy:f.entities) if(enemy.type=="robot" && enemy.hp>0) {
+      // A currently protected robot may lose protection by the next Tick.
+      // During a fortress event, allow a possible acquired area attack even
+      // when the enemy's private residence progress is unknown.
+      bool area=w.global("unrivaled",f.tick+1) || w.effect("unrivaled",enemy.team,f.tick+1);
+      int range=area?static_cast<int>(w.effect_number("unrivaled",enemy.team,f.tick+1,"attack_radius",2)):2;
+      if(f.radius<range+2) {covered=false;break;}
+      firing.push_back({enemy.pos,range,area});
+      for(auto direction:delta) {
+        Pos p=add(enemy.pos,direction);
+        // Unknown terrain is allowed in this possibility set, never stored
+        // as a map fact. Ignore future occupancy and ray blockers to retain
+        // a conservative geometric envelope, not an invented enemy action.
+        if(!w.blocked(p,f.tick)) firing.push_back({p,range,area});
+      }
+    }
+    auto exposed=[&](Pos p) {
+      return std::any_of(firing.begin(),firing.end(),[&](const auto &shot) {
+        if(p==shot.pos) return false;
+        return shot.area?std::max(std::abs(p.x-shot.pos.x),std::abs(p.y-shot.pos.y))<=shot.range
+          :((p.x==shot.pos.x || p.y==shot.pos.y) && distance(p,shot.pos)<=shot.range);
+      });
+    };
+    Pos planned=add(f.pos,delta[preferred]);
+    if(covered && exposed(planned) && !w.blocked(*goal,f.tick)) {
+      std::vector<int> to_goal(size,-1),frontier(size);int read=0,write=0;
+      int target=goal->y*f.width+goal->x;to_goal[target]=0;frontier[write++]=target;
+      while(read<write) {
+        int i=frontier[read++];Pos p{i%f.width,i/f.width};
+        for(auto direction:delta) {
+          Pos q=add(p,direction);if(w.blocked(q,f.tick)) continue;
+          int next=q.y*f.width+q.x;if(to_goal[next]>=0) continue;
+          to_goal[next]=to_goal[i]+1;frontier[write++]=next;
+        }
+      }
+      int planned_distance=to_goal[planned.y*f.width+planned.x];
+      int best=preferred,best_visits=std::numeric_limits<int>::max();
+      double planned_event=w.environmental_damage(planned,f.tick+1,false);
+      if(planned_distance>=0) for(int d=0;d<4;++d) {
+        Pos p=add(f.pos,delta[d]);if(w.blocked(p,f.tick) || w.occupied(p) || exposed(p)) continue;
+        int remaining=to_goal[p.y*f.width+p.x];
+        if(remaining<0 || remaining>planned_distance || to_goal[root]!=remaining+1
+          || remaining+1>max_ticks_-f.tick || w.environmental_damage(p,f.tick+1,false)>planned_event) continue;
+        auto visit=w.visits.find(p);int count=visit==w.visits.end()?0:visit->second;
+        if(count<best_visits) {best=d;best_visits=count;}
+      }
+      preferred=best;
+    }
+  }
   std::vector<Action> actions{{"wait",""}};
   if(stage_==2) {actions.push_back({"defend",""});if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});}
   for(const auto &d:dirs) actions.push_back({"move",d});
   Action best; double best_score=-inf;
   for(const auto &a:actions) {
-    double score=a.type=="wait"?-.3:-.15, received=incoming*vulnerable;
+    const bool robust_trade=config_.standoff_robust_trade && !config_.standoff_fire_risk
+      && a.type=="attack" && robust_directions.count(a.direction)
+      && f.radius>=std::max(std::abs(f.pos.x-probe_enemy->pos.x),std::abs(f.pos.y-probe_enemy->pos.y))+2
+      && !(goal && *goal==f.pos && (goal_type=="resource" || goal_type=="mission"));
+    const bool attack_probe=!robust_trade && config_.standoff_attack_probe
+      && a.type=="attack" && probe_directions.count(a.direction);
+    const bool probabilistic=uncertain_threats || attack_probe;
+    double score=a.type=="wait"?-.3:-.15, received=(attack_probe?probe_incoming:incoming)*vulnerable;
+    if(pursuit_pause && a.type=="wait") score+=1.2;
+    double predicted_attack=0,predicted_reward=0,tempo_bonus=0;
+    double movement_utility=0,residence_credit=0;
+    struct JointOutcome {double probability,received,attack,reward;};
+    std::vector<JointOutcome> purity_risk;
     std::map<std::string,double> dealt;
     Pos end=f.pos; int actual=-1;
     if(a.type=="move") {
@@ -1009,9 +1428,13 @@ Action Planner::decide(const World &observed) {
         if(e.kind=="pepper") for(auto point:e.points) if(point!=end && (point.x==end.x || point.y==end.y))
           for(const auto &v:f.entities) if(v.type=="robot" && distance(v.pos,point)==1) score-=e.number("damage",50)*.08;
       }
+      // All of these route/entry/visit effects require surviving combat and
+      // executing the move. Retain only the ordinary action cost if cancelled.
+      movement_utility=score+.15;
     } else if(a.type=="defend") {
       received=0;
-      if(!purity && !f.protected_spawn) for(const auto &v:f.entities) if(v.type=="robot" && !v.protected_spawn) {
+      if(config_.standoff_fire_risk) received=purity?0:guarded_incoming*vulnerable;
+      else if(!purity && !f.protected_spawn) for(const auto &v:f.entities) if(v.type=="robot" && !v.protected_spawn) {
         if(forecast && w.environmental_damage(v.pos,f.tick,v.protected_spawn)>=v.hp) continue;
         bool un=w.effect("unrivaled",v.team,f.tick);
         int radius=static_cast<int>(w.effect_number("unrivaled",v.team,f.tick,"attack_radius",2));
@@ -1022,7 +1445,7 @@ Action Planner::decide(const World &observed) {
     } else if(a.type=="attack") {
       std::vector<const Entity*> targets; int dir=std::find(dirs.begin(),dirs.end(),a.direction)-dirs.begin();
       for(const auto &v:f.entities) if(v.type=="robot") {
-        if(forecast && w.environmental_damage(v.pos,f.tick,v.protected_spawn)>=v.hp) continue;
+        if((forecast || config_.score_aware_combat) && w.environmental_damage(v.pos,f.tick,v.protected_spawn)>=v.hp) continue;
         auto d=Pos{v.pos.x-f.pos.x,v.pos.y-f.pos.y};
         int radius=static_cast<int>(w.effect_number("unrivaled",f.team,f.tick,"attack_radius",2));
         if(self_unrivaled) {if(std::max(std::abs(d.x),std::abs(d.y))<=radius) targets.push_back(&v);}
@@ -1039,16 +1462,57 @@ Action Planner::decide(const World &observed) {
         double defended=self_unrivaled?w.effect_number("unrivaled",f.team,f.tick,"defended_damage",10):10;
         double mult=w.effect("pan",v->team,f.tick)?w.effect_number("pan",v->team,f.tick,"damage_multiplier",2):1;
         double damage=((1-defend_probability)*base+(purity?0:defend_probability*defended))*mult;
-        double available_hp=forecast?std::max(0.0,v->hp-w.environmental_damage(v->pos,f.tick,v->protected_spawn)):v->hp;
+        double available_hp=(forecast || config_.score_aware_combat)?std::max(0.0,v->hp-w.environmental_damage(v->pos,f.tick,v->protected_spawn)):v->hp;
         dealt[v->team]=std::min(available_hp,damage);
         int discount_until=config_.damage_scale_ticks<0?max_ticks_/5:config_.damage_scale_ticks;
         // Finite resources can be lost permanently; ordinary damage can
         // usually be earned later. Preserve the existing score for a possible
         // immediate finisher, even when a defended shot may not finish it.
         double scale=(f.tick<discount_until && base*mult<available_hp)?config_.early_damage_scale:1;
-        score+=std::min(available_hp,damage)*.09*scale;
-        if(damage>=available_hp) score+=.9;
-        if(purity) received+=defend_probability*reflection;
+        if(!config_.score_aware_combat) {
+          score+=std::min(available_hp,damage)*.09*scale;
+          if(damage>=available_hp) score+=.9;
+        } else {
+          // Only current visible potential contributors affect the estimate.
+          // They may choose other actions; their private plans are unknown.
+          int contributors=1;
+          double other_damage=0;
+          auto blockers=f.entities;
+          blockers.push_back({"robot",f.team,f.team,f.pos,f.hp,0,false,f.protected_spawn});
+          for(const auto &other:f.entities) if(other.type=="robot" && other.team!=v->team
+            && !other.protected_spawn && other.hp>w.environmental_damage(other.pos,f.tick,false)) {
+            bool un=w.effect("unrivaled",other.team,f.tick);
+            int range=static_cast<int>(w.effect_number("unrivaled",other.team,f.tick,"attack_radius",2));
+            if((un && std::max(std::abs(other.pos.x-v->pos.x),std::abs(other.pos.y-v->pos.y))<=range)
+              || (!un && normal_ray_clear(other.pos,v->pos,other.team,blockers))) {
+              ++contributors;
+              double other_base=un?w.effect_number("unrivaled",other.team,f.tick,"attack_damage",50):20;
+              double other_guard=un?w.effect_number("unrivaled",other.team,f.tick,"defended_damage",10):10;
+              other_damage+=((1-defend_probability)*other_base+(purity?0:defend_probability*other_guard))*mult;
+            }
+          }
+          // If the visible potential contributors all shoot, overkill is
+          // apportioned by nominal damage. This is a conservative estimate.
+          predicted_attack+=std::min(damage,available_hp*damage/std::max(1e-9,damage+other_damage))*scale;
+          double finish=(base*mult>=available_hp?1-defend_probability:0)
+            +(!purity && defended*mult>=available_hp?defend_probability:0);
+          predicted_reward+=60*finish/contributors;
+          // Removing a visible opponent also stops its movement/collection and
+          // costs respawn time. This is a small tempo value, not private task data.
+          score+=.5*finish;tempo_bonus+=.5*finish;
+        }
+        if(purity && v==purity_enemy) {
+          // The past defending flag only supplies the existing heuristic prior.
+          // Conservatively fold non-defense actions into a possible shot at us;
+          // the same car cannot both shoot and reflect our attack this Tick.
+          double shot=std::min(available_hp,base*mult);
+          purity_risk={{1-defend_probability,incoming*vulnerable,shot*scale,shot>=available_hp?60.0:0.0},
+                       {defend_probability,reflection,0,0}};
+          received=(1-defend_probability)*incoming*vulnerable+defend_probability*reflection;
+          predicted_attack=(1-defend_probability)*shot*scale;
+          predicted_reward=(1-defend_probability)*(shot>=available_hp?60:0);
+          dealt[v->team]=(1-defend_probability)*shot;
+        } else if(purity) received+=defend_probability*reflection;
       }
     }
     // Being in the fortress after combat counts this Tick; acquisition helps next Tick.
@@ -1061,10 +1525,111 @@ Action Planner::decide(const World &observed) {
         }
         // Attack and defend also count as post-combat residence. Preserve
         // confirmed progress rather than restarting a full stay-time estimate.
-        if(e.end-f.tick>=std::max(1.0,e.number("stay_ticks",10)-residence)) score+=.9;
+        if(e.end-f.tick>=std::max(1.0,e.number("stay_ticks",10)-residence)) {score+=.9;residence_credit+=.9;}
       }
+    const double before_combat_risk=score;
     score-=received*.045;
-    if(received>=hp) score-=3;
+    double death_probability=received>=hp?1:0;
+    const auto &risk=attack_probe?probe_risk:(a.type=="defend"?guarded_risk:ordinary_risk);
+    double raw_expected=attack_probe?probe_incoming:(a.type=="defend"?(purity?0:guarded_incoming):incoming);
+    double fixed_received=std::max(0.0,received-raw_expected*vulnerable);
+    if(probabilistic) {
+      death_probability=0;
+      for(const auto &[damage,probability]:risk)
+        if((a.type=="defend" && purity?0:damage*vulnerable)+fixed_received>=hp)
+          death_probability+=probability;
+    }
+    if(!purity_risk.empty()) {
+      death_probability=0;
+      for(const auto &branch:purity_risk) if(branch.received>=hp) death_probability+=branch.probability;
+    }
+    score-=3*death_probability;
+    const double progress_survival=(config_.survival_conditioned_progress && stage_==2)
+      ?std::clamp(1-death_probability,0.0,1.0):1;
+    if(config_.survival_conditioned_progress && stage_==2)
+      score-=death_probability*(movement_utility+residence_credit);
+    if(config_.score_aware_combat && stage_==2) {
+      double after=projected_damage(f.effective_damage,predicted_attack,predicted_reward,received>=hp?1:0);
+      score+=1.8*(combat_score(after)-combat_score(f.effective_damage));
+      bool finite_done=w.resources.empty() && w.explored.size()>=static_cast<size_t>(size*.95)
+        && std::all_of(f.missions.begin(),f.missions.end(),[&](const auto &m) {
+          return f.completed.count(m.at("id").template get<std::string>());
+        });
+      // Excess adjusted damage is still the fourth tie-break. Its local value
+      // rises only when known resources, exploration and public tasks are done.
+      double tie_weight=finite_done?.054:.006;
+      double reserve=(f.tick>=max_ticks_/5 && max_ticks_-f.tick>4)?config_.damage_reserve:0;
+      double excess_before=std::max(0.0,f.effective_damage-500),excess_after=std::max(0.0,after-500);
+      // A full score is fragile when one death can take it below 500. Value a
+      // small reserve after the finite-resource phase; it is not extra points.
+      score+=.054*(std::min(reserve,excess_after)-std::min(reserve,excess_before));
+      score+=tie_weight*(std::max(0.0,excess_after-reserve)-std::max(0.0,excess_before-reserve));
+      auto value=[&](double damage) {
+        double excess=std::max(0.0,damage-500);
+        return 1.8*combat_score(damage)+.054*std::min(reserve,excess)
+          +tie_weight*std::max(0.0,excess-reserve);
+      };
+      if(!purity_risk.empty()) {
+        double expected=0;Json branches=Json::array();
+        for(const auto &branch:purity_risk) {
+          double result=projected_damage(f.effective_damage,branch.attack,branch.reward,branch.received>=hp?1:0);
+          expected+=branch.probability*value(result);
+          branches.push_back({{"probability",branch.probability},{"received",branch.received},
+            {"attack",branch.attack},{"kill_reward",branch.reward},{"dies",branch.received>=hp},
+            {"adjusted_damage",result}});
+        }
+        score+=expected-value(after);
+        purity_evaluations.push_back({{"direction",a.direction},{"enemy",purity_enemy->team},
+          {"hp_after_environment",hp},{"expected_received",received},{"death_probability",death_probability},
+          {"branches_nondefend_then_defend",branches},{"score",score}});
+      }
+      if(probabilistic) {
+        double expected=0;
+        if(attack_probe) {
+          // Couple the one visible opponent's action with both its received
+          // damage and its return fire. This retains cap/floor/death effects;
+          // it does not pretend the heuristic action frequencies are known.
+          double available=std::max(0.0,probe_enemy->hp-w.environmental_damage(probe_enemy->pos,f.tick,false));
+          double mult=w.effect("pan",probe_enemy->team,f.tick)
+            ?w.effect_number("pan",probe_enemy->team,f.tick,"damage_multiplier",2):1;
+          auto branch=[&](double shot,double received) {
+            double contribution=std::min(available,shot*mult);
+            return value(projected_damage(f.effective_damage,contribution,contribution>=available?60:0,
+              received+fixed_received>=hp?1:0));
+          };
+          expected=.25*branch(20,20*vulnerable)+.65*branch(10,0)+.10*branch(20,0);
+        } else for(const auto &[damage,probability]:risk) {
+          double loss=(a.type=="defend" && purity?0:damage*vulnerable)+fixed_received;
+          expected+=probability*value(projected_damage(f.effective_damage,predicted_attack,predicted_reward,loss>=hp?1:0));
+        }
+        // Preserve the existing valuation outside this observed standoff. In
+        // the experiment, include death loss even if mean incoming is sublethal.
+        score+=expected-value(after);
+      }
+      if(robust_trade) {
+        double available=std::max(0.0,probe_enemy->hp-w.environmental_damage(probe_enemy->pos,f.tick,false));
+        double mult=w.effect("pan",probe_enemy->team,f.tick)
+          ?w.effect_number("pan",probe_enemy->team,f.tick,"damage_multiplier",2):1;
+        double worst=inf;bool gains_in_every_branch=true;
+        auto branch=[&](double shot,double incoming) {
+          double contribution=std::min(available,shot*mult);
+          bool finish=contribution>=available,death=incoming>=hp;
+          double result=projected_damage(f.effective_damage,contribution,finish?60:0,death?1:0);
+          if(combat_score(result)<=combat_score(f.effective_damage)+1e-9) gains_in_every_branch=false;
+          worst=std::min(worst,value(result)-value(f.effective_damage)
+            -.045*std::min(hp,incoming)+(finish?.5:0)
+            -(config_.survival_conditioned_progress && death?residence_credit:0));
+        };
+        branch(20,20*vulnerable); // They fire: simultaneous damage, rewards, then deaths.
+        branch(10,0);             // They defend: reduced outgoing damage, no return shot.
+        branch(20,0);             // They wait/move: combat occurs before movement.
+        // In an already observed fixed point, require immediate points even
+        // in the worst legal branch, rather than charging the same fixed
+        // death aversion on top of the actual death deduction. Respawn still
+        // loses future opportunities; the complete-match tests must assess it.
+        if(gains_in_every_branch) score=before_combat_risk-tempo_bonus+worst;
+      }
+    }
     if(forecast && stage_==2 && received<hp) {
       std::vector<Entity> future;
       for(auto enemy:f.entities) if(enemy.type=="robot") {
@@ -1127,16 +1692,16 @@ Action Planner::decide(const World &observed) {
       // resolves before movement; moving cannot evade that received damage.
       const bool protected_next=f.protected_spawn && a.type!="move";
       if(!protected_next && received<hp && escape_damage[end.y*f.width+end.x]>=hp-received)
-        score-=100;
-      else score-=event_cost(end,f.tick+1,protected_next);
-    } else if(a.type!="move") score-=event_cost(end,f.tick+1,f.protected_spawn);
+        score-=progress_survival*100;
+      else score-=progress_survival*event_cost(end,f.tick+1,protected_next);
+    } else if(a.type!="move") score-=progress_survival*event_cost(end,f.tick+1,f.protected_spawn);
     // Collection and coordinate tasks are checked after movement. When the
     // current cell is the goal, staying alive here completes it; moving away
     // would forfeit the objective even though the route has already arrived.
     if(stage_==2 && goal && *goal==f.pos && (goal_type=="resource" || goal_type=="mission") && a.type!="move")
-      score+=std::min(4.0,best_goal);
+      score+=progress_survival*std::min(4.0,best_goal);
     if(stage_==2 && config_.event_timing && goal && *goal==f.pos && goal_type=="heal_stage" && a.type!="move")
-      score+=std::min(4.0,best_goal);
+      score+=progress_survival*std::min(4.0,best_goal);
     if(stage_==1 && goal && *goal==f.pos && a.type=="wait") score=2;
     if(score>best_score) {best_score=score;best=a;}
   }

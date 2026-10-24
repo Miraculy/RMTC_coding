@@ -78,7 +78,7 @@ bool AiClient::submit(const Frame &f,const Events &events,const std::string &tex
   if(seen_.count(key)) return false;
   if(seen_.size()>=1024) return false;
   Json input{{"session_id",f.session},{"tick",f.tick},{"map",{{"width",f.width},{"height",f.height}}},
-    {"missions",f.missions},{"known_events",events.context()},{"source",source},{"announcement",text},
+    {"missions",f.missions},{"known_events",events.context(config_.event_revisions)},{"source",source},{"announcement",text},
     {"qualification",qualification}};
   Job job{f.session,token_,key,f.tick,std::move(input)};
   if(qualification) jobs_.push_back(std::move(job));
@@ -96,7 +96,7 @@ bool AiClient::repair_schema(const AiResult &failed,const Frame &current,const E
     || repairs_.count(failed.request_key) || failed.parsed.dump().size()>131072) return false;
   if(config_.budget && successes_+static_cast<int>(jobs_.size())>=config_.budget) return false;
   Json input=failed.input;input["notice_tick"]=failed.tick;input["tick"]=current.tick;
-  input["known_events"]=events.context();input["validation_error"]=diagnostic;input["previous_output"]=failed.parsed;
+  input["known_events"]=events.context(config_.event_revisions);input["validation_error"]=diagnostic;input["previous_output"]=failed.parsed;
   // Fresh announcements retain priority. Repairs consume the same success
   // budget, occur at most once per notice and at most eight times per session.
   jobs_.push_back({session_,token_,failed.request_key,current.tick,std::move(input),true});
@@ -111,6 +111,17 @@ AiResult AiClient::request(const Job &job) {
   auto start=std::chrono::steady_clock::now();
   Json body{{"messages",Json::array({{{"role","system"},{"content",prompt}},{{"role","user"},{"content",job.input.dump()}}})},
     {"max_tokens",config_.max_tokens},{"stream",false}};
+  if(config_.event_revisions) body["messages"][0]["content"]=std::string(prompt)+R"REV(
+Versioned event memory is enabled. Known event records have local event_id and revision fields.
+When this announcement corrects or updates ONE existing event, copy its EXACT event_id and revision
+into the complete corrected event record. This replaces that record, including incorrect geometry,
+activation Tick or parameters. Do not emit its old version alongside the correction. Identify the
+event using the announcement's meaning; same kind or activation Tick alone is not sufficient.
+A genuinely independent new event must OMIT event_id and revision, even if another event has the
+same kind and activation Tick. Never invent an ID. Do not copy unchanged known records. If identity
+is unresolved, omit that update rather than guessing. Revision metadata is optional for new events,
+required when correcting an existing event's geometry or activation Tick, and recommended for all
+other updates. It does not apply to per-robot effects.)REV";
   if(!config_.model.empty())body["model"]=config_.model;
   if(config_.provider=="deepseek") {
     body["thinking"]={{"type","disabled"}};

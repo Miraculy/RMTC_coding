@@ -10,6 +10,7 @@ struct AiConfig {
   std::string url, model;
   std::string provider{"gateway"};
   int timeout_ms{12000}, budget{90}, max_tokens{2500};
+  bool event_revisions{false};
 };
 struct AiResult {
   std::string session, error;

@@ -21,6 +21,8 @@ target_link_libraries(contestant rmtc_core rmtc_ai)
 # Explicit opt-in build/run: makes paid real API calls, never part of colcon test.
 add_executable(ai_benchmark EXCLUDE_FROM_ALL tools/ai_benchmark.cpp)
 target_link_libraries(ai_benchmark rmtc_ai)
+add_executable(event_revision_benchmark EXCLUDE_FROM_ALL tools/event_revision_benchmark.cpp)
+target_link_libraries(event_revision_benchmark rmtc_ai)
 install(TARGETS contestant DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 if(BUILD_TESTING)

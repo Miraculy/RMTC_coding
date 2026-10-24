@@ -45,12 +45,18 @@ struct Action {
   Json json(const Frame &f) const;
 };
 bool legal(const Action &a, const Frame &f, int stage);
+// Public v1.1 score formula. Perception remains authoritative; this is only
+// used to value hypothetical actions, never to reconstruct received score.
+double combat_score(double adjusted_damage);
+double projected_damage(double previous, double attack, double reward, int deaths);
 struct Event {
   std::string kind;
   int start{}, end{};
   std::optional<std::array<Pos,2>> rect;
   std::vector<Pos> points;
   Json params = Json::object();
+  std::string id; // Local opaque identity exposed only in the revision experiment.
+  int revision{};
   bool active(int t) const { return start <= t && t < end; }
   bool contains(Pos p) const;
   double number(const std::string &key, double fallback) const;
@@ -63,11 +69,15 @@ struct Effect {
 class Events {
 public:
   // Only accepts model-produced structured data, never interprets announcement text.
-  void merge(const Json &j, const Frame &f);
-  Json context() const;
+  // A versioned request snapshot permits explicit model revisions. A missing
+  // snapshot retains legacy merge semantics; same-kind/Tick is never identity.
+  Json merge(const Json &j, const Frame &f, const Json *request_context=nullptr);
+  Json context(bool versioned=false) const;
   void clear();
   std::vector<Event> items;
   std::vector<Effect> effects;
+private:
+  int next_id_{};
 };
 struct Resource { Pos pos; double value; int seen; };
 struct Obstacle { int first, last; };
@@ -110,9 +120,23 @@ struct PlannerConfig {
   bool frontier_lookahead{false};
   bool information_paths{false};
   bool race_aware_resources{false};
+  bool contested_task_resources{false}; // Experimental: locally winnable public-task resource races.
+  bool competitive_exploration{false}; // Experimental: softly discount unknown cells a visible rival can reach earlier.
+  bool finish_early_exploration{false}; // Experimental: retain a reachable early exploration plan before optional hunting.
+  bool opening_route_information{false}; // Experimental: more first-step vision on equal-cost normal-resource routes.
+  bool survival_conditioned_progress{false}; // Experimental: value post-combat progress only in predicted survival branches.
+  bool respawn_task_route{false}; // Experimental: use an observed revival to start a higher-rate public task route.
+  bool safe_progress_moves{false}; // Experimental: equally short finite-goal steps outside next-Tick fire envelopes.
+  bool break_pursuit_cycles{true}; // One-step pause in a repeatedly observed pursuit orbit, with HP/score guards.
+  bool coordinate_before_hunt{false}; // Experimental: finish a reachable late public coordinate task before optional pursuit.
+  bool standoff_fire_risk{false}; // Experimental: uncertain fire after a continuous observed defense standoff.
+  bool standoff_attack_probe{false}; // Experimental: attack-only risk after a prolonged low-HP single-enemy standoff.
+  bool standoff_robust_trade{true}; // Worst joint-action score gain in an observed low-HP standoff or guaranteed finisher.
+  bool purity_joint_actions{false}; // Experimental: joint attack/defend outcomes for one fully observed opponent.
   bool resource_beam{false};
   bool transient_occupancy{true};
   bool event_timing{false}; // Experimental event entry/wait/residence planning.
+  bool fortress_time_budget{false}; // Isolate fortress waiting/residence cost from angel timing.
   bool productive_escape{true}; // Early collection/exploration progress out of current fire.
   bool validated_enemy_memory{false}; // Experimental: stop targeting disproved old positions.
   bool event_escape{false}; // Experimental: preserve a route out before known event activation.
@@ -120,18 +144,24 @@ struct PlannerConfig {
   bool event_unavoidable_cost{false}; // Experimental: remove fixed future damage from route comparison.
   bool frontier_distance_window{false}; // Experimental: compare exploration over a vision-sized travel window.
   bool ray_occlusion{false}; // Experimental: visible robots block incoming normal shots.
+  bool score_aware_combat{true}; // v1.1 marginal points, kill reward and death loss.
+  int damage_reserve{120}; // With score-aware combat, a two-death buffer after the resource phase.
 };
 class Planner {
 public:
   explicit Planner(int stage=2, int max_ticks=500, PlannerConfig config={});
   Action decide(const World &w);
-  void reset() { target_.reset(); target_type_.clear(); reason = "reset"; }
+  void reset() { target_.reset(); target_type_.clear(); recovery_mission_.reset(); goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); reason = "reset"; }
   std::string reason;
+  std::string goal_reason; // Selected goal before an immediate combat action overrides reason.
+  Json purity_evaluations=Json::array(); // Local estimates only; never fed back as observations.
+  Json opening_route_evaluation; // A hypothetical equal-cost route choice, not a resource observation.
   std::optional<Pos> target() const {return target_;}
 private:
   int stage_, max_ticks_;
   PlannerConfig config_;
   std::optional<Pos> target_;
+  std::optional<std::string> recovery_mission_;
   std::string target_type_;
 };
 } // namespace rmtc

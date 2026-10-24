@@ -36,9 +36,23 @@ public:
     planner_config.frontier_lookahead=declare_parameter<bool>("frontier_lookahead",false);
     planner_config.information_paths=declare_parameter<bool>("information_paths",false);
     planner_config.race_aware_resources=declare_parameter<bool>("race_aware_resources",false);
+    planner_config.contested_task_resources=declare_parameter<bool>("contested_task_resources",false);
+    planner_config.competitive_exploration=declare_parameter<bool>("competitive_exploration",false);
+    planner_config.finish_early_exploration=declare_parameter<bool>("finish_early_exploration",false);
+    planner_config.opening_route_information=declare_parameter<bool>("opening_route_information",false);
+    planner_config.survival_conditioned_progress=declare_parameter<bool>("survival_conditioned_progress",false);
+    planner_config.respawn_task_route=declare_parameter<bool>("respawn_task_route",false);
+    planner_config.safe_progress_moves=declare_parameter<bool>("safe_progress_moves",false);
+    planner_config.break_pursuit_cycles=declare_parameter<bool>("break_pursuit_cycles",true);
+    planner_config.coordinate_before_hunt=declare_parameter<bool>("coordinate_before_hunt",false);
+    planner_config.standoff_fire_risk=declare_parameter<bool>("standoff_fire_risk",false);
+    planner_config.standoff_attack_probe=declare_parameter<bool>("standoff_attack_probe",false);
+    planner_config.standoff_robust_trade=declare_parameter<bool>("standoff_robust_trade",true);
+    planner_config.purity_joint_actions=declare_parameter<bool>("purity_joint_actions",false);
     planner_config.resource_beam=declare_parameter<bool>("resource_beam",false);
     planner_config.transient_occupancy=declare_parameter<bool>("transient_occupancy",true);
     planner_config.event_timing=declare_parameter<bool>("event_timing",false);
+    planner_config.fortress_time_budget=declare_parameter<bool>("fortress_time_budget",false);
     planner_config.productive_escape=declare_parameter<bool>("productive_escape",true);
     planner_config.validated_enemy_memory=declare_parameter<bool>("validated_enemy_memory",false);
     planner_config.event_escape=declare_parameter<bool>("event_escape",false);
@@ -47,6 +61,8 @@ public:
     planner_config.event_unavoidable_cost=declare_parameter<bool>("event_unavoidable_cost",false);
     planner_config.frontier_distance_window=declare_parameter<bool>("frontier_distance_window",false);
     planner_config.ray_occlusion=declare_parameter<bool>("ray_occlusion",false);
+    planner_config.score_aware_combat=declare_parameter<bool>("score_aware_combat",true);
+    planner_config.damage_reserve=declare_parameter<int>("damage_reserve",120);
     planner_=std::make_unique<Planner>(stage_,max_ticks_,planner_config);
     token_file_=declare_parameter<std::string>("token_file","");
     AiConfig config;
@@ -57,6 +73,8 @@ public:
     config.timeout_ms=declare_parameter<int>("ai_timeout_ms",12000);
     config.budget=declare_parameter<int>("ai_budget",90);
     config.max_tokens=declare_parameter<int>("ai_max_tokens",2500);
+    event_revisions_=declare_parameter<bool>("event_revisions",false);
+    config.event_revisions=event_revisions_;
     ai_enabled_=declare_parameter<bool>("ai_enabled",true) && stage_==2;
     ai_action_revision_=declare_parameter<bool>("ai_action_revision",false);
     revision_window_ms_=declare_parameter<int>("revision_window_ms",350);
@@ -115,18 +133,23 @@ private:
     auto target=planner_->target();
     record({{"kind","action_revision"},{"session_id",f.session},{"tick",f.tick},
       {"before",before},{"action",action.json(f)},{"frame_age_ms",age()},
-      {"reason",planner_->reason},{"target",target?Json::array({target->x,target->y}):Json()}});
+      {"reason",planner_->reason},{"goal_reason",planner_->goal_reason},{"target",target?Json::array({target->x,target->y}):Json()}});
+    if(!planner_->purity_evaluations.empty()) record({{"kind","purity_evaluation"},{"tick",f.tick},
+      {"revision",true},{"selected",action.json(f)},{"candidates",planner_->purity_evaluations}});
+    if(!planner_->opening_route_evaluation.is_null()) record({{"kind","opening_route_evaluation"},{"tick",f.tick},
+      {"revision",true},{"selected",action.json(f)},{"estimate",planner_->opening_route_evaluation}});
   }
   void collect_ai(bool allow_revision=true) {
     if(!ai_)return;
     bool changed=false;
     for(auto &result:ai_->drain()) {
       if(result.session!=world_.current.session)continue;
-      bool accepted=false,repair_queued=false;std::string schema_error;
+      bool accepted=false,repair_queued=false;std::string schema_error;Json event_updates=Json::array();
       if(result.success && result.error.empty()) {
         try {
           auto before=world_.events.context();
-          world_.events.merge(result.parsed,world_.current);accepted=true;
+          const Json *context=event_revisions_?&result.input.at("known_events"):nullptr;
+          event_updates=world_.events.merge(result.parsed,world_.current,context);accepted=true;
           changed=changed || before!=world_.events.context();
         }
         catch(const std::exception &error) {
@@ -140,7 +163,8 @@ private:
         {"interpretation_applied",accepted && use_event_interpretation_},
         {"elapsed_ms",result.elapsed_ms},
         {"model",result.model},{"reasoning_chars",result.reasoning_chars},{"usage",result.usage},
-        {"event_memory",accepted?world_.events.context():Json()}});
+        {"event_updates",event_updates},
+        {"event_memory",accepted?world_.events.context(event_revisions_):Json()}});
       if(result.success)ai_success_=true;
       if(accepted)RCLCPP_INFO(get_logger(),"AI event update: tick=%d events=%zu effects=%zu",world_.current.tick,world_.events.items.size(),world_.events.effects.size());
       else RCLCPP_WARN(get_logger(),"AI fallback: HTTP=%d reason=%s",result.http_status,result.error.c_str());
@@ -217,8 +241,14 @@ private:
           {"hp",e.hp},{"defending",e.defending},{"protected",e.protected_spawn}});
       }
       auto target=planner_->target();
+      if(!planner_->purity_evaluations.empty()) record({{"kind","purity_evaluation"},{"tick",f.tick},
+        {"selected",a.json(f)},{"candidates",planner_->purity_evaluations}});
+      if(!planner_->opening_route_evaluation.is_null()) record({{"kind","opening_route_evaluation"},{"tick",f.tick},
+        {"selected",a.json(f)},{"estimate",planner_->opening_route_evaluation}});
       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},
-        {"hp",f.hp},{"action",a.json(f)},{"reason",planner_->reason},{"last_action",decoded["self"].value("last_action",Json())},
+        {"hp",f.hp},{"alive",f.alive},{"protected",f.protected_spawn},
+        {"public_missions",f.missions},{"initial_spawn",world_.spawn?Json::array({world_.spawn->x,world_.spawn->y}):Json()},
+        {"action",a.json(f)},{"reason",planner_->reason},{"goal_reason",planner_->goal_reason},{"last_action",decoded["self"].value("last_action",Json())},
         {"resource_value",f.resource_value},{"effective_damage",f.effective_damage},{"completed",f.completed},{"latency_ms",elapsed},
         {"target",target?Json::array({target->x,target->y}):Json()},
         {"observed_resources",observed_resources},{"observed_enemies",observed_enemies},
@@ -235,7 +265,7 @@ private:
   int stage_{},max_ticks_{},qualification_tick_{-100};
   int revision_window_ms_{350},cached_tick_{-1},revised_tick_{-1};
   std::chrono::steady_clock::time_point frame_received_{};
-  bool ai_action_revision_{},use_event_interpretation_{true};
+  bool ai_action_revision_{},use_event_interpretation_{true},event_revisions_{};
   bool ai_enabled_{},ai_success_{},log_failed_{},deepseek_{};
   World world_;std::unique_ptr<Planner> planner_;std::unique_ptr<AiClient> ai_;std::ofstream log_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr action_pub_,registration_;

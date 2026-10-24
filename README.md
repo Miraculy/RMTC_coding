@@ -326,6 +326,8 @@ run_deepseek.sh          # 本地直连 DeepSeek 官方、关闭思考的运行�
 
 第二阶段默认启用前期资源/探索过程中的有限脱离交火收益（`productive_escape=true`），可通过 `-p productive_escape:=false` 对照旧行为。其跨地图收益与退步案例见 [VALIDATION.md](VALIDATION.md)，实验开关说明见 [docs/STRATEGY.md](docs/STRATEGY.md)。
 
+已迁移到 v1.1 裁判规则：对抗项500点满分，死亡扣60，致死批次合格贡献者平分60奖励。感知中的 `effective_damage` 是调整后权威值，可下降；程序直接采用，不重复加减。规则和新版验证方法见 [docs/RULES_V1_1.md](docs/RULES_V1_1.md)。
+
 规划层逐 Tick 执行动作，LLM 异步理解公开随机事件。随机事件原文不通过正则或关键词替代模型理解；模型结果经过校验后才进入本地事件状态。程序使用本队感知和公开公告，不以裁判全图或内部接口作为决策输入。
 
 模型输出被事件结构校验拒绝时，可交回 LLM 进行一次有界修复：每条公告至多一次、每场至多八次，计入原 `ai_budget`，新公告优先。修复请求仅携带原公开输入、错误分类、上次模型输出和已验证事件状态，仍须通过完整校验；日志记录 `schema_error`、`repair_attempt` 和 `repair_queued`，不保存凭据或任意异常文本。
@@ -369,3 +371,17 @@ cd /root/ros2_ws
 跨容器或主机通信时，还需确认网络可达性及实际动作回执。维护者当前容器的路径映射和网络细节见 [本地开发记录](docs/DEVELOPMENT_NOTES.md)。
 
 CLion 可打开 `src/rmtc_bot` 作为 CMake 项目。其他支持编译数据库的编辑器可使用 `build/rmtc_bot/compile_commands.json`。构建、索引和调试进程都应加载对应的 ROS Humble 环境。
+
+四车独立测试的运行方式、合法输入隔离与轮换方法见 [SELFPLAY.md](docs/SELFPLAY.md)。正式参赛仍只启动本队一个席位。
+
+当前默认已启用经四车配对验证的追击循环修正与低血量联合攻防估值，资源竞争、固定开火概率与坐标任务优先实验仍关闭。`run_contestant.sh`加载该默认策略；开发对照可显式切换参数，结果和限制见[策略说明](docs/STRATEGY.md)与[验证记录](VALIDATION.md)。
+
+死亡后的移动可执行性、复活返程与任务出发时机复盘见[死亡恢复记录](docs/DEATH_RECOVERY_REVIEW.md)。相关实验目前默认关闭；日志中的存活、保护、公开任务和初始出生点只用于本车合法历史复盘。
+
+低血量推进的下一Tick火线实验及完整四臂反例见[动态火线记录](docs/DYNAMIC_FIRE_REVIEW.md)。`safe_progress_moves`默认关闭，组合任务路线未提高最终得分；当前默认事件解释已用同一安装版本完成双真实调用对照，定向幻术案例32.5→57.5分、第三→第一，验证范围见该记录。
+
+历轮实验的选择、反例和后续方向见[综合复盘](docs/EXPERIMENT_SYNTHESIS.md)。堡垒时间预算已拆成独立实验`fortress_time_budget`，默认关闭；事件测试除分数外，还需核对模型解释、返回时间及对手是否先出现行动差异。历史模型增分归属各次冻结版本，不能自动沿用到后续构建。
+
+按新的复查方向，原阶段目标已[归档暂停](docs/GOAL_ARCHIVE_2026-10-23.md)，逐项判断与实施结果见[新方向记录](docs/NEW_IDEA_IMPLEMENTATION.md)。首项`event_revisions`用于模型明确引用既有事件并修正其解释，仍默认关闭；本地及真实合成样例通过，但完整对照尚无增分，部分反馈迟到。正式入口继续只控制本席位。
+
+第二项`purity_joint_actions`已实现单敌攻击/防御互斥估值，默认关闭。130项检查通过；四图真实提前反馈对照触发了估值，但行动、比分与排名均未改变，暂不推广。具体适用范围与完整证据仍见[新方向记录](docs/NEW_IDEA_IMPLEMENTATION.md)。
