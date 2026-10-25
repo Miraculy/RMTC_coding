@@ -42,7 +42,7 @@ python3 tools/strategy_eval.py \
 实测结果及失败批次见工作空间根目录的VALIDATION.md。
 
 
-完整批次可使用只读比较工具复核，控制组和候选组必须为同一冻结二进制、同一对手配置、同一地图/席位/重复次数及实际部署配置：
+完整批次可使用只读比较工具复核，传统参数消融要求控制组和候选组使用同一冻结二进制、同一对手配置、同一地图/席位/重复次数及实际部署配置。下述profile模式允许只替换焦点车二进制：
 
 ```bash
 python3 tools/compare_eval.py \
@@ -58,3 +58,29 @@ python3 tools/compare_eval.py \
 真实模型对照还须检查随机反馈造成的混杂：相同程序、地图、参数不保证模型内容或返回Tick相同。`tools/event_pair_audit.py`使用相同`--control/--candidate`参数，分别定位四车自己的首次动作、目标及已记录观察差异；若对手早于焦点车改变行动，最终分差不能单独归因于焦点参数。结构接受不等于语义正确，未发现早期差异也不构成完整的因果证明。
 
 可单列事件解释关闭的对手组：双方同用`--opponent-param use_event_interpretation:=false`，焦点车双方仍使用真实模型解释，仅切换待测参数。其他车仍独立调用模型并仅接收自己的合法输入；不伪造调用或注入裁判配置。这种对手类型的结果不可混作默认事件对手组表现。
+
+## 2026-10-24：用户要求后续采用四种策略同场
+
+已扩展为每辆车独立的冻结策略profile，并在同图轮换席位。传统CLI的候选/对手两组参数仍保留；异质测试另用`--lineup-file`，不将现有1对3/2对2证据当作四种策略同场。具体已完成批次与结论见HETEROGENEOUS_BENCHMARK_20261024.md。
+
+先用每图四轮平衡席位筛选；候选入围后采用全部24种策略席位排列，覆盖相对邻位。另保留“固定三辆异质对手，只替换焦点候选”的配对消融，避免把同局赢家当成新增模块贡献。训练图和未见图预先分开，同场四车不作为四个独立统计样本；各profile必须维持上文完整合法信息隔离。具体对手池、累计增益对照和工作反思见[SCORE_RETROSPECTIVE_20261024.md](SCORE_RETROSPECTIVE_20261024.md)。
+
+## 四个独立profile的使用
+
+`experiments/heterogeneous-20261024/current.json`和`early.json`是成套例子：`lineup`按顺序列出四个不同profile，首项为配对比较的焦点；`profiles`为每项设置`binary`、预期`sha256`和白名单规划`params`。程序、参数只属于各自车，不接收其他profile名称或配置。可使用不同版本的冻结程序。
+
+```bash
+python3 tools/strategy_eval.py \
+  --judge-root /root/rmtc_practice \
+  --workspace /root/ros2_ws/experiments/heterogeneous-20261024 \
+  --binary /root/ros2_ws/install/rmtc_bot/lib/rmtc_bot/contestant \
+  --lineup-file experiments/heterogeneous-20261024/current.json \
+  --lineup-schedule cyclic --variants interior91837,map74921 \
+  --label current-screen --opponents self --no-events --domain 74 --port 8474
+```
+
+`cyclic`每图4轮，各策略在A/B/C/D各一次，但相对邻位不变。`all`每图24种排列，各策略每席位6次。`--arrangements 0,1`可分片，序号写入结果键，避免同一焦点席位的不同邻位覆盖。不得同时使用传统`--param`、`--opponent-param`或非默认`--seats`。
+
+开赛前在裁判暂停时读每车ROS声明参数，核实本车team、stage及profile指定参数；写入`*-parameters.json`，不会转送给任何车辆。每批保存`lineup.json`、按内容去重的冻结二进制、测试器及`strategy_profiles.py`依赖快照/哈希。测试器发现程序退出、参数未声明/未应用、接口越界时，在开赛前失败。
+
+`compare_eval.py`在profile模式核查排列、运行参数、冻结文件及每车完整性；两组部署配置/测试脚本须一致，三辆非焦点车的profile、二进制、参数须完全相同，仅焦点车可换版本。`profile_league_audit.py <完整批次...>`只在赛后汇总各profile分项、名次、前三任务、前60/100Tick资源和行动分布。一次调用只能汇总同一焦点版本/同一测试条件，不混多个对手池；地图轮换仍为相关样本。

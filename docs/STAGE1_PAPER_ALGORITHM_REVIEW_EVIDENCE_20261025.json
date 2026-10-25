@@ -1,0 +1,2360 @@
+{
+  "purpose": "Read-only discovery-to-collection review of existing real referee own logs. No new matches or algorithm changes.",
+  "summary": {
+    "formal-control": {
+      "maps": 15,
+      "mean_score": 32.266666666666666,
+      "discovered_value": 2990.0,
+      "collected_value": 2420.0,
+      "seen_but_uncollected": 570.0,
+      "never_seen_value": 10.0,
+      "aggregate_conversion": 0.8093645484949833,
+      "maps_all_resources_seen": 14,
+      "mean_discovered_by_tick": {
+        "20": 88.0,
+        "40": 140.66666666666666,
+        "60": 172.66666666666666,
+        "80": 188.0,
+        "99": 199.33333333333334
+      }
+    },
+    "joint-v17": {
+      "maps": 15,
+      "mean_score": 36.53333333333333,
+      "discovered_value": 2880.0,
+      "collected_value": 2740.0,
+      "seen_but_uncollected": 140.0,
+      "never_seen_value": 120.0,
+      "aggregate_conversion": 0.9513888888888888,
+      "maps_all_resources_seen": 9,
+      "mean_discovered_by_tick": {
+        "20": 84.0,
+        "40": 118.0,
+        "60": 146.66666666666666,
+        "80": 178.66666666666666,
+        "99": 192.0
+      }
+    },
+    "subgoal-v4": {
+      "maps": 15,
+      "mean_score": 35.86666666666667,
+      "discovered_value": 2900.0,
+      "collected_value": 2690.0,
+      "seen_but_uncollected": 210.0,
+      "never_seen_value": 100.0,
+      "aggregate_conversion": 0.9275862068965517,
+      "maps_all_resources_seen": 8,
+      "mean_discovered_by_tick": {
+        "20": 84.0,
+        "40": 122.66666666666667,
+        "60": 157.33333333333334,
+        "80": 183.33333333333334,
+        "99": 193.33333333333334
+      }
+    }
+  },
+  "cases": [
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 2,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 75,
+      "by_tick": {
+        "0": {
+          "discovered": 40.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 90.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-2-candidate-2-1792887500113451782/own/A-1792887501082575688.jsonl": "59c2bf253b3f2cd435e375a26128b01e63fca8d4589ec7187dadde01c6a90767"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 2,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 40.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.8,
+      "all_seen_tick": 63,
+      "by_tick": {
+        "0": {
+          "discovered": 40.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 130.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 60.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-2-control-2-1792887500113451772/own/A-1792887501074601381.jsonl": "ced32cf31e02bf31a1c9dde1533f6693e52a897895c37b94c50c08add3889266"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 1,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 30.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.85,
+      "all_seen_tick": 69,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 20.0
+        },
+        "40": {
+          "discovered": 100.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-1-control-1-1792887500113467772/own/A-1792887500769265143.jsonl": "7f21e27ba3db75309ae28bf699f7bc9f3bf748c4aaa05b319731aa7bd86664ab"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 1,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 83,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 20.0
+        },
+        "40": {
+          "discovered": 100.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-1-candidate-1-1792887500117001919/own/A-1792887500769216281.jsonl": "f0923846065ffef2361ab804426294327cc91c2ba1574f22e0c42b52105e7b6e"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 4,
+      "score": 30.0,
+      "collected": 150.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.75,
+      "all_seen_tick": 71,
+      "by_tick": {
+        "0": {
+          "discovered": 80.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 130.0,
+          "collected": 70.0
+        },
+        "40": {
+          "discovered": 160.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 170.0,
+          "collected": 90.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 120.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 150.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-4-control-4-1792887515609299128/own/A-1792887516263557706.jsonl": "73c1e07aefa6fcbafddb064ecb38e1f76940d2e22e6224d9e62a1a93b6584448"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 3,
+      "score": 28.0,
+      "collected": 140.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 60.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.7,
+      "all_seen_tick": 77,
+      "by_tick": {
+        "0": {
+          "discovered": 0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 150.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 170.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 110.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 140.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-3-control-3-1792887515664298805/own/A-1792887516329309874.jsonl": "f858846e60f6f18333231741a894fbca8e56c3b9e6ea52cc9ac1271b80fa7bf6"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 4,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 10.0,
+      "conversion": 0.8947368421052632,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 80.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 130.0,
+          "collected": 70.0
+        },
+        "40": {
+          "discovered": 170.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 170.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-4-candidate-4-1792887515363190639/own/A-1792887516016825863.jsonl": "486fa39ea45f47905d7f3de7fc164c8e7db9104472530bca97d1f1d0cecb90a2"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 3,
+      "score": 30.0,
+      "collected": 150.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 30.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.8333333333333334,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 150.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-3-candidate-3-1792887516060805705/own/A-1792887517048104462.jsonl": "40db48d923b332c09a5bba652f739b21f7ee5285055d03974fde98631956b269"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 6,
+      "score": 30.0,
+      "collected": 150.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.75,
+      "all_seen_tick": 87,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 70.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 100.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 150.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-6-control-6-1792887530853597454/own/A-1792887531517574198.jsonl": "7320c9b4bae8d83b7f6839a52e4048d8c6246c454eeeafc9e058d80bfb4b2d7e"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 5,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 30.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.85,
+      "all_seen_tick": 79,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 100.0,
+          "collected": 60.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-5-control-5-1792887530953121867/own/A-1792887531611363104.jsonl": "d16f24af0a089409a4c393b95b115069e70b0966b13e243e962123e035aa24c4"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 6,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 93,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-6-candidate-6-1792887531303329162/own/A-1792887531958826880.jsonl": "f297727744090cc32281a694b71515fbaf61de76cf2bd69bb7f514f46233d71d"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 5,
+      "score": 40.0,
+      "collected": 200.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 0.0,
+      "conversion": 1.0,
+      "all_seen_tick": 91,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 70.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 120.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 200.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-5-candidate-5-1792887531704802152/own/A-1792887532358849592.jsonl": "40bc28416f575b1bd00af260f27619b0408566871b77004c7e4d5ee2e61446d3"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 8,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 62,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 120.0,
+          "collected": 70.0
+        },
+        "40": {
+          "discovered": 180.0,
+          "collected": 120.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 140.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-8-control-8-1792887545852890242/own/A-1792887546365288767.jsonl": "086fa052126dfc079205851b4ce1ea154e915db3765d4e42533e1fd4a0f7a7c5"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 7,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 30.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.85,
+      "all_seen_tick": 82,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 40.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 110.0,
+          "collected": 70.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-7-control-7-1792887546552663658/own/A-1792887547410619033.jsonl": "e7572770eb12dca6a224c539e12ebd95f58f606d573a2ac81743fc8e8d3a3d45"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 8,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 94,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 130.0,
+          "collected": 90.0
+        },
+        "40": {
+          "discovered": 150.0,
+          "collected": 120.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 140.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-8-candidate-8-1792887546901445603/own/A-1792887547555509254.jsonl": "7e3a999177c50c29f57ab44b7f18484a7feaa8231856e076ddde2da354b64098"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 7,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 90,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 40.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 60.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 160.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-7-candidate-7-1792887546951278723/own/A-1792887547605471376.jsonl": "f94a7e5a5d208160d5ba48c9ec2c9f8be59b8745fb46325d10329e53444be885"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 10,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 65,
+      "by_tick": {
+        "0": {
+          "discovered": 50.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 90.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 100.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 170.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-10-control-10-1792887560752256192/own/A-1792887561417746303.jsonl": "f3025aac1f0fae4e1af71b6edf078588c4515fb556fd4ed8c257bd261d154eb9"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 10,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 10.0,
+      "conversion": 1.0,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 50.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 150.0,
+          "collected": 110.0
+        },
+        "60": {
+          "discovered": 170.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-10-candidate-10-1792887561795159554/own/A-1792887562451182319.jsonl": "117d1d0aef21ff33a0afbf793df0734b840825217536ac523156a0935d8d5c1d"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 9,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 40.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.8,
+      "all_seen_tick": 89,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 50.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 150.0,
+          "collected": 70.0
+        },
+        "60": {
+          "discovered": 170.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-9-control-9-1792887561647721300/own/A-1792887562305372578.jsonl": "958aaa86eac215c3e7caee4e096f8b5db4c7bae86435cd14a6b695b9bae1b658"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 9,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.8888888888888888,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 110.0,
+          "collected": 40.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 90.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-9-candidate-9-1792887562201611648/own/A-1792887562857874654.jsonl": "b48e38ca670f33d4986536dd72a16f862a5c953179afb551028826a2d2fe763d"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 12,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 10.0,
+      "conversion": 0.8947368421052632,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 70.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-12-control-12-1792887575637328000/own/A-1792887576151609666.jsonl": "206fd8b09e0e9859925bde7f2754b0d1ec73195c58255eff85eadf2082673984"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 12,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 10.0,
+      "conversion": 0.8947368421052632,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 90.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-12-candidate-12-1792887576739750257/own/A-1792887577391636021.jsonl": "59390d8beaa9f4cd229d4a66b1fc378fcafdca8cf2a03b2ec889eac1a0bc1d3d"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 11,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 40.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.8,
+      "all_seen_tick": 87,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 160.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-11-control-11-1792887577044027383/own/A-1792887577700595984.jsonl": "528ddee9b41355033efef10f214d216cffa5cf490f7139e1868269d11bc11202"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 11,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 10.0,
+      "conversion": 1.0,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 100.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-11-candidate-11-1792887577491648051/own/A-1792887578147271265.jsonl": "8ac6e9234b403f242acdfe7116f8a477451dd6d6e40a05f994452c3b1d9ad2cd"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 42,
+      "score": 30.0,
+      "collected": 150.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.75,
+      "all_seen_tick": 94,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 110.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 160.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 150.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-42-control-42-1792887590633523915/own/A-1792887591286798441.jsonl": "1048de2e4355aee69024cdbcd0efa9197d13a51ceed0541c0ad1657466ce8624"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 42,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 73,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 110.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 150.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 180.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-42-candidate-42-1792887591890122256/own/A-1792887592549616979.jsonl": "95b992091e869292ec504bb273795e48ef5fb5fcbee005670cfe8623f1674b62"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 13,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 40.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.8,
+      "all_seen_tick": 99,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 90.0,
+          "collected": 0.0
+        },
+        "40": {
+          "discovered": 150.0,
+          "collected": 20.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 70.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-13-control-13-1792887592639989109/own/A-1792887593494494164.jsonl": "a53b205e8a4b1e127522afd27042beab0561fa795e65615ea8c18c6a45cdeb96"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 13,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 81,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 100.0,
+          "collected": 80.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 170.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-13-candidate-13-1792887592790502265/own/A-1792887593472831013.jsonl": "78069d4c8b64f65faaee947d211a88c31c0736eaaa5ed368256e85a5dd641ffc"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "held35",
+      "seed": 1007,
+      "score": 30.0,
+      "collected": 150.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.75,
+      "all_seen_tick": 72,
+      "by_tick": {
+        "0": {
+          "discovered": 50.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 110.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 150.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 80.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 130.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 150.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held35-1007-control-1007-1792887605979642907/own/A-1792887606636411153.jsonl": "81dfdecd7290cb6086c4e6abd81b666fa70120ad159681d02ef942b30a93a6c5"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "held35",
+      "seed": 1007,
+      "score": 28.0,
+      "collected": 140.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 10.0,
+      "conversion": 0.7368421052631579,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 50.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 100.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 100.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 60.0
+        },
+        "80": {
+          "discovered": 150.0,
+          "collected": 100.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 140.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held35-1007-candidate-1007-1792887606879078351/own/A-1792887607393265129.jsonl": "70d1ed7b6c17d0cd9f30a60f253af5e1c68612697fac3c899780fc734df190da"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "known25",
+      "seed": 20261024,
+      "score": 30.0,
+      "collected": 150.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.75,
+      "all_seen_tick": 84,
+      "by_tick": {
+        "0": {
+          "discovered": 40.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 130.0,
+          "collected": 60.0
+        },
+        "40": {
+          "discovered": 160.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 120.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 150.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-20261024-control-20261024-1792887607830458407/own/A-1792887608484853030.jsonl": "babc1ce309c9a369c46e5a795d1e1dc73fd7a04e7750a0644a2e1f1a9c9421e8"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "known25",
+      "seed": 20261024,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.9444444444444444,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 40.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 100.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 100.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-known25-20261024-candidate-20261024-1792887607981303928/own/A-1792887608634083524.jsonl": "6b8c472de0ddbf725bc8b9e835cb9f764ecbc596ff86373788c67d08d7b88b2e"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "held25",
+      "seed": 2009,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 77,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 90.0,
+          "collected": 60.0
+        },
+        "40": {
+          "discovered": 180.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held25-2009-control-2009-1792887621628488443/own/A-1792887622290323579.jsonl": "b8c2e985814ce248af509bd434666f307ed766c163a6427b0cee5091e7d1b00a"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "held25",
+      "seed": 2009,
+      "score": 40.0,
+      "collected": 200.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 0.0,
+      "conversion": 1.0,
+      "all_seen_tick": 72,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 110.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 110.0
+        },
+        "60": {
+          "discovered": 190.0,
+          "collected": 160.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 180.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held25-2009-candidate-2009-1792887621724328266/own/A-1792887622380160653.jsonl": "d88e2982c16bec7830b714a03083dbf9956978b5a95c3d9503729a284696743e"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "held30",
+      "seed": 1008,
+      "score": 28.0,
+      "collected": 140.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 50.0,
+      "never_seen_value": 10.0,
+      "conversion": 0.7368421052631579,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 40.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 80.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 100.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 140.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held30-1008-control-1008-1792887623072733437/own/A-1792887623589705282.jsonl": "d1a8f237ccdd890fef1b059c524ae9159711c6ba20151f48ad393ddea26a38e9"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "held30",
+      "seed": 1008,
+      "score": 24.0,
+      "collected": 120.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 60.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.6666666666666666,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 40.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 80.0
+        },
+        "80": {
+          "discovered": 140.0,
+          "collected": 90.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 100.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held30-1008-candidate-1008-1792887623626402127/own/A-1792887624581140609.jsonl": "e2bcb0a6bb71891794d76ec4b9cf54ee4f9be7b0eef8b1faf2eced68150e2fe6"
+      }
+    },
+    {
+      "policy": "formal-control",
+      "group": "held30",
+      "seed": 1019,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 40.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.8,
+      "all_seen_tick": 68,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 20.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 120.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held30-1019-control-1019-1792887638221066211/own/A-1792887639041462650.jsonl": "539e20377a2b53c634fedca50d6e4463a0c12ee9a3154c930a46414ea9440c37"
+      }
+    },
+    {
+      "policy": "subgoal-v4",
+      "group": "held30",
+      "seed": 1019,
+      "score": 20.0,
+      "collected": 100.0,
+      "discovered": 160.0,
+      "seen_but_uncollected": 60.0,
+      "never_seen_value": 40.0,
+      "conversion": 0.625,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 50.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 130.0,
+          "collected": 70.0
+        },
+        "80": {
+          "discovered": 150.0,
+          "collected": 80.0
+        },
+        "99": {
+          "discovered": 160.0,
+          "collected": 100.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-subgoal-20261025/test-results/subgoal-v4-development-crosscheck-held30-1019-candidate-1019-1792887639174559371/own/A-1792887639893696594.jsonl": "ce250852f7485ca5536b08ce5643ed2b0dd05be28b3daac71b96b8cf38d82de3"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 2,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 91,
+      "by_tick": {
+        "0": {
+          "discovered": 40.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 110.0,
+          "collected": 60.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 170.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-2-candidate-2-1792884246446911367/own/A-1792884247314183543.jsonl": "971f5810527d8649a02c42a34dc5d0f4a5652dddc72bc8562ac0f03372d4db3e"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 1,
+      "score": 36.0,
+      "collected": 180.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.9,
+      "all_seen_tick": 99,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 20.0
+        },
+        "40": {
+          "discovered": 160.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 180.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-1-candidate-1-1792884246446320065/own/A-1792884247115731030.jsonl": "757864a98273bb21d081e94f65be122ed75cf76898629a9c4ce355b6344281e7"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 4,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 170.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 30.0,
+      "conversion": 1.0,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 80.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 120.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 130.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 170.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-4-candidate-4-1792884261994198504/own/A-1792884262650138881.jsonl": "beb1bee294c949bd745bf20adcc0961357a4b606b94bab9233a02dc27ee664d4"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 3,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.9444444444444444,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-3-candidate-3-1792884262900606170/own/A-1792884263556321292.jsonl": "b998b81d9e18096be323c7faeb2b6b30669d9654bbe975bcf67d5f713c1357a0"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 6,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 99,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 70.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 120.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 150.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-6-candidate-6-1792884277342599800/own/A-1792884277996543280.jsonl": "8640f532f31ea5a6b931b3874968af47de0fd916c1db28db066a1034ce37b81f"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 5,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 20.0,
+      "never_seen_value": 10.0,
+      "conversion": 0.8947368421052632,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 70.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 100.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 150.0,
+          "collected": 100.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-5-candidate-5-1792884279138496825/own/A-1792884279982764575.jsonl": "6a183e021fd58f6bee2eda63e7ef3fd7de8f1debe96a0d3ab683d7303ec024e7"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 8,
+      "score": 34.0,
+      "collected": 170.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.9444444444444444,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 100.0
+        },
+        "80": {
+          "discovered": 150.0,
+          "collected": 120.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-8-candidate-8-1792884293641719046/own/A-1792884294295606180.jsonl": "b3dd53616a8ae34a735737606bc6d94b4154d9ea5a4c1f498b146972d7570cca"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 7,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 95,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 80.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 180.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 180.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-7-candidate-7-1792884294587476970/own/A-1792884295101953749.jsonl": "4eb0a661ee8191e6f1ab409758052e1971eb546abcb8400d34c675623ec8e61a"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 9,
+      "score": 32.0,
+      "collected": 160.0,
+      "discovered": 170.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 30.0,
+      "conversion": 0.9411764705882353,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 80.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 80.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 170.0,
+          "collected": 160.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-9-candidate-9-1792884309679239092/own/A-1792884310332944174.jsonl": "5ccb2761ddface198f9d1625cc70951c1ea713b53b1f9d33a972073c8ac79171"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 10,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 74,
+      "by_tick": {
+        "0": {
+          "discovered": 50.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 170.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-10-candidate-10-1792884309584049034/own/A-1792884310244967210.jsonl": "441e16fb9dfbdbb2855b7249a195e37f17342ae9f46a18f8e7525bb5d4e09ff0"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 11,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 96,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 50.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 110.0
+        },
+        "60": {
+          "discovered": 140.0,
+          "collected": 140.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 190.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-11-candidate-11-1792884324629962436/own/A-1792884325293938091.jsonl": "322fda9ef41e878300cb3cd6c1eb7e9cee3873f21be50a0e65b0c9c1f065d173"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 12,
+      "score": 40.0,
+      "collected": 200.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 0.0,
+      "conversion": 1.0,
+      "all_seen_tick": 82,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 90.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 70.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 130.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 160.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 200.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-12-candidate-12-1792884325525423357/own/A-1792884326181350207.jsonl": "354197ff7e166fbc88573c7429deab37289e76662ae9a13712d44708d91a3a1a"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 13,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 190.0,
+      "seen_but_uncollected": 0.0,
+      "never_seen_value": 10.0,
+      "conversion": 1.0,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 120.0,
+          "collected": 80.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 140.0
+        },
+        "80": {
+          "discovered": 190.0,
+          "collected": 180.0
+        },
+        "99": {
+          "discovered": 190.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-13-candidate-13-1792884339869497128/own/A-1792884340386512130.jsonl": "e86503c71f728f00b9cf721ef9c3693d2266cea1fc6651e3d79d450f470ac413"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 42,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 68,
+      "by_tick": {
+        "0": {
+          "discovered": 20.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 80.0,
+          "collected": 30.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 90.0
+        },
+        "60": {
+          "discovered": 160.0,
+          "collected": 150.0
+        },
+        "80": {
+          "discovered": 200.0,
+          "collected": 180.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 190.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-42-candidate-42-1792884340771723459/own/A-1792884341431290404.jsonl": "721d8fd355606422cdfd17f44bedba6db0b399597a1812cf7761b38414c27f65"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "known25",
+      "seed": 20261024,
+      "score": 38.0,
+      "collected": 190.0,
+      "discovered": 200.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 0.0,
+      "conversion": 0.95,
+      "all_seen_tick": 90,
+      "by_tick": {
+        "0": {
+          "discovered": 40.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 120.0,
+          "collected": 60.0
+        },
+        "40": {
+          "discovered": 120.0,
+          "collected": 100.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 110.0
+        },
+        "80": {
+          "discovered": 170.0,
+          "collected": 140.0
+        },
+        "99": {
+          "discovered": 200.0,
+          "collected": 170.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-known25-20261024-candidate-20261024-1792884355012325080/own/A-1792884355768023742.jsonl": "3625b4f0f5a52042963b97300218badcd16b1c2ba9a1b06f62b3134d929249d2"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "held35",
+      "seed": 1007,
+      "score": 22.0,
+      "collected": 110.0,
+      "discovered": 150.0,
+      "seen_but_uncollected": 40.0,
+      "never_seen_value": 50.0,
+      "conversion": 0.7333333333333333,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 50.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 110.0,
+          "collected": 20.0
+        },
+        "40": {
+          "discovered": 130.0,
+          "collected": 70.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 90.0
+        },
+        "80": {
+          "discovered": 150.0,
+          "collected": 110.0
+        },
+        "99": {
+          "discovered": 150.0,
+          "collected": 110.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-held35-1007-candidate-1007-1792884356466577635/own/A-1792884356975530187.jsonl": "4a5fdff7fef06a4e84ea0440795a80c8f52c8d04c597a916a81e71f3f01f95ad"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "held30",
+      "seed": 1008,
+      "score": 22.0,
+      "collected": 110.0,
+      "discovered": 180.0,
+      "seen_but_uncollected": 70.0,
+      "never_seen_value": 20.0,
+      "conversion": 0.6111111111111112,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 10.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 70.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 140.0,
+          "collected": 40.0
+        },
+        "60": {
+          "discovered": 150.0,
+          "collected": 80.0
+        },
+        "80": {
+          "discovered": 150.0,
+          "collected": 90.0
+        },
+        "99": {
+          "discovered": 180.0,
+          "collected": 110.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-held30-1008-candidate-1008-1792884370661437777/own/A-1792884371318198896.jsonl": "41f969be237d99300714970fb5ca82a7789fa1c1a97c5a6490f8b440b6900107"
+      }
+    },
+    {
+      "policy": "joint-v17",
+      "group": "held25",
+      "seed": 2009,
+      "score": 28.0,
+      "collected": 140.0,
+      "discovered": 150.0,
+      "seen_but_uncollected": 10.0,
+      "never_seen_value": 50.0,
+      "conversion": 0.9333333333333333,
+      "all_seen_tick": null,
+      "by_tick": {
+        "0": {
+          "discovered": 30.0,
+          "collected": 0.0
+        },
+        "20": {
+          "discovered": 60.0,
+          "collected": 40.0
+        },
+        "40": {
+          "discovered": 110.0,
+          "collected": 50.0
+        },
+        "60": {
+          "discovered": 110.0,
+          "collected": 50.0
+        },
+        "80": {
+          "discovered": 110.0,
+          "collected": 80.0
+        },
+        "99": {
+          "discovered": 150.0,
+          "collected": 130.0
+        }
+      },
+      "own_log_sha256": {
+        "experiments/stage1-joint-20261025/test-results/joint-v17-development-crosscheck-held25-2009-candidate-2009-1792884371312903750/own/A-1792884372031610265.jsonl": "a12bc1c2ac6bb5495779fba4754be45c2e00ba20412f30b3380a1e1facce28cd"
+      }
+    }
+  ],
+  "limitations": [
+    "Historic development maps, not independent confirmation.",
+    "First appearance is union of own visible resources; final collection comes from existing official summary.",
+    "Seen-but-uncollected value is not all avoidable loss; route budget may make part physically infeasible.",
+    "Tick checkpoints show pre-action perception; final value includes action99."
+  ]
+}

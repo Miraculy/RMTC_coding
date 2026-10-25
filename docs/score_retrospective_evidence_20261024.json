@@ -1,0 +1,120 @@
+{
+  "robust_defensive": {
+    "control": {
+      "cases": 32,
+      "mean_score": 33.159375,
+      "mean_resource": 50.0,
+      "total_missions": 73,
+      "strict_first": 9
+    },
+    "candidate": {
+      "cases": 32,
+      "mean_score": 38.53125,
+      "mean_resource": 50.0,
+      "total_missions": 81,
+      "strict_first": 13
+    },
+    "score_gain_cases": 12,
+    "score_loss_cases": 0,
+    "control_batches": [
+      "robust-trade-control-known-1792720114102711010",
+      "robust-trade-control-heldout-1792720114307558004",
+      "robust-trade-control-fresh-one-1792720256578769037",
+      "robust-trade-control-fresh-two-1792720256842932259"
+    ],
+    "candidate_batches": [
+      "robust-trade-candidate-known-1792720114578767763",
+      "robust-trade-candidate-heldout-1792720113720028613",
+      "robust-trade-candidate-fresh-one-1792720257918988316",
+      "robust-trade-candidate-fresh-two-1792720257122401766"
+    ],
+    "mean_score_gain": 5.371875000000003,
+    "mean_task_score_gain": 1.25
+  },
+  "pursuit": {
+    "control": {
+      "cases": 24,
+      "mean_score": 34.916666666666664,
+      "mean_resource": 49.166666666666664,
+      "total_missions": 57,
+      "strict_first": 6
+    },
+    "candidate": {
+      "cases": 24,
+      "mean_score": 35.479166666666664,
+      "mean_resource": 49.166666666666664,
+      "total_missions": 57,
+      "strict_first": 7
+    },
+    "score_gain_cases": 1,
+    "score_loss_cases": 0,
+    "control_batches": [
+      "standoff-control-1792716603965311740",
+      "pursuit-guard-control-one-1792716938483578135",
+      "pursuit-guard-control-two-1792716938809957502"
+    ],
+    "candidate_batches": [
+      "standoff-pursuit-1792716603957552647",
+      "pursuit-guard-candidate-one-1792716939791777778",
+      "pursuit-guard-candidate-two-1792716936571043525"
+    ],
+    "mean_score_gain": 0.5625,
+    "mean_task_score_gain": 0.0
+  },
+  "old_escape": {
+    "control": {
+      "cases": 24,
+      "mean_score": 47.1875,
+      "mean_resource": 72.08333333333333,
+      "total_missions": 68,
+      "strict_first": 13
+    },
+    "candidate": {
+      "cases": 24,
+      "mean_score": 48.020833333333336,
+      "mean_resource": 75.41666666666667,
+      "total_missions": 68,
+      "strict_first": 15
+    },
+    "score_gain_cases": 7,
+    "score_loss_cases": 2,
+    "control_batches": [
+      "escape-control-known-1792650541147651260",
+      "escape-control-unseen-1792650542711632507",
+      "escape2-control-1792650776138417442"
+    ],
+    "candidate_batches": [
+      "escape-candidate-known-1792650534437185540",
+      "escape-candidate-unseen-1792650541212221521",
+      "escape2-candidate-1792650766910397838"
+    ],
+    "mean_score_gain": 0.8333333333333357,
+    "mean_task_score_gain": 0.0
+  },
+  "model_illusion_69307": {
+    "control": {
+      "cases": 1,
+      "mean_score": 32.5,
+      "mean_resource": 30.0,
+      "total_missions": 2,
+      "strict_first": 0
+    },
+    "candidate": {
+      "cases": 1,
+      "mean_score": 57.5,
+      "mean_resource": 110.0,
+      "total_missions": 3,
+      "strict_first": 1
+    },
+    "score_gain_cases": 1,
+    "score_loss_cases": 0,
+    "control_batches": [
+      "fire-envelope-default-short-control-1792739698658459761"
+    ],
+    "candidate_batches": [
+      "fire-envelope-default-short-candidate-1792739697293714917"
+    ],
+    "mean_score_gain": 25.0,
+    "mean_task_score_gain": 5.0
+  }
+}

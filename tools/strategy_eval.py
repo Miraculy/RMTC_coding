@@ -20,6 +20,8 @@ import time
 import urllib.error
 import urllib.request
 
+from strategy_profiles import read_lineup, freeze_lineup, arrangements, audit_parameters
+
 
 def compress_judge_logs(directory):
     """Archive only closed judge traces; configs, results and own logs stay plain."""
@@ -156,6 +158,9 @@ def main():
     parser.add_argument('--archive-root', type=pathlib.Path,
                         help='Optional durable checkpoint directory; run workspace can remain in /tmp')
     parser.add_argument('--binary', type=pathlib.Path)
+    parser.add_argument('--lineup-file', type=pathlib.Path, help='Four independent frozen strategy profiles')
+    parser.add_argument('--lineup-schedule', choices=['cyclic', 'all'], default='cyclic')
+    parser.add_argument('--arrangements', help='Optional comma-separated arrangement indexes for partitioning a schedule')
     parser.add_argument('--label', default='candidate')
     parser.add_argument('--seats', default='A,B,C,D')
     parser.add_argument('--repetitions', type=int, default=1)
@@ -180,14 +185,15 @@ def main():
         parser.error('--seats requires unique comma-separated seats A,B,C,D')
     if not 1 <= args.repetitions <= 100:
         parser.error('--repetitions must be between 1 and 100')
-    allowed_params = {'early_movement_scale', 'early_damage_scale', 'damage_scale_ticks',
+    allowed_params = {'stage1_subgoal_risk', 'stage1_joint_coverage', 'stage1_resource_route', 'early_movement_scale', 'early_damage_scale', 'damage_scale_ticks',
                       'resource_paths_exact', 'resource_lookahead',
                       'tactical_forecast', 'forecast_start_tick', 'early_interception', 'frontier_lookahead',
                       'information_paths', 'race_aware_resources', 'contested_task_resources', 'competitive_exploration', 'finish_early_exploration', 'survival_conditioned_progress', 'respawn_task_route', 'safe_progress_moves', 'break_pursuit_cycles', 'coordinate_before_hunt', 'standoff_fire_risk', 'standoff_attack_probe', 'standoff_robust_trade', 'resource_beam', 'transient_occupancy', 'event_timing',
                       'ai_action_revision', 'revision_window_ms', 'productive_escape', 'validated_enemy_memory', 'event_escape',
                       'use_event_interpretation', 'event_unavoidable_cost', 'frontier_distance_window', 'ray_occlusion',
                       'score_aware_combat', 'damage_reserve', 'fortress_time_budget', 'event_revisions', 'purity_joint_actions',
-                      'opening_route_information', 'resource_route_pickups', 'resource_race_yield', 'resource_fresh_returns',
+                      'opening_route_information', 'opening_high_value', 'resource_cap_switch',
+                      'resource_route_pickups', 'resource_race_yield', 'resource_fresh_returns',
                       'resource_blocked_recovery'}
     if any(p.partition(':=')[0] not in allowed_params or ':=' not in p for p in args.param + args.opponent_param):
         parser.error('--param only accepts the documented planner parameters')
@@ -201,6 +207,19 @@ def main():
         parser.error('--key-file requires --ai')
     if args.ai == 'gateway-real' and not args.key_file:
         parser.error('--ai gateway-real requires a private --key-file for the test proxy')
+    source_binary = args.binary or args.workspace / 'install/rmtc_bot/lib/rmtc_bot/contestant'
+    lineup = None
+    if args.lineup_file:
+        if args.opponents != 'self' or args.param or args.opponent_param or args.candidate_count != 1 or args.seats != 'A,B,C,D':
+            parser.error('Lineups require self opponents, default seats, and no legacy strategy overrides')
+        try:
+            lineup = read_lineup(args.lineup_file, source_binary, allowed_params)
+            selected = None if args.arrangements is None else [int(v) for v in args.arrangements.split(',')]
+            schedule = arrangements(lineup['lineup'], args.lineup_schedule, selected)
+        except (ValueError, OSError, TypeError) as error:
+            parser.error(str(error))
+    elif args.arrangements is not None or args.lineup_schedule != 'cyclic':
+        parser.error('Lineup scheduling options require --lineup-file')
     stamp = str(time.time_ns())
     output = args.workspace / 'test-results' / (args.label + '-' + stamp)
     output.mkdir(parents=True)
@@ -222,12 +241,17 @@ def main():
             shutil.copy2(source, target)
         (destination / 'checkpoint.json').write_text(json.dumps(
             dict(complete=complete, source_workspace=str(output), preserved_at_ns=time.time_ns()), indent=2))
-    source_binary = args.binary or args.workspace / 'install/rmtc_bot/lib/rmtc_bot/contestant'
     binary = output / 'contestant'
     shutil.copy2(source_binary, binary)
     binary_hash = hashlib.sha256(binary.read_bytes()).hexdigest()
     evaluator_source = pathlib.Path(__file__).read_bytes()
     (output / 'strategy_eval.py').write_bytes(evaluator_source)
+    module = pathlib.Path(__file__).with_name('strategy_profiles.py')
+    (output / module.name).write_bytes(module.read_bytes())
+    modules = {module.name: hashlib.sha256(module.read_bytes()).hexdigest()}
+    if lineup:
+        lineup = freeze_lineup(lineup, output, binary_hash)
+        (output / 'lineup.json').write_text(json.dumps(lineup, indent=2))
     judge_manifest = json.loads((args.judge_root / 'manifest.json').read_text())
     (output / 'run.json').write_text(json.dumps(dict(binary_sha256=binary_hash,
         evaluator_sha256=hashlib.sha256(evaluator_source).hexdigest(),
@@ -238,7 +262,11 @@ def main():
         max_ticks=args.max_ticks, no_events=args.no_events, variants=args.variants,
         seats=args.seats, repetitions=args.repetitions, domain=args.domain,
         port=args.port, planner_params=args.param, opponents=args.opponents,
-        candidate_count=args.candidate_count, opponent_params=args.opponent_param), indent=2))
+        candidate_count=args.candidate_count, opponent_params=args.opponent_param,
+        evaluator_modules=modules, profiles=lineup['profiles'] if lineup else None,
+        lineup=lineup['lineup'] if lineup else None,
+        lineup_schedule=args.lineup_schedule if lineup else None,
+        arrangements=[i for i, _ in schedule] if lineup else None), indent=2))
     base = f'http://127.0.0.1:{args.port}'
     environment = dict(os.environ, ROS_DOMAIN_ID=str(args.domain),
                        RMTC_INTERNAL_DOMAIN_ID=str(args.domain + 1), ROS_LOCALHOST_ONLY='0',
@@ -413,7 +441,7 @@ def main():
                                    'announce_tick': 120 if suffix == '-purity-late' else 1}]
         return config
 
-    def start_contestant(team, log_dir, planner_params, name):
+    def start_contestant(team, log_dir, planner_params, name, executable=binary):
         extra = {'RMTC_TEAM_TOKEN': 'practice-' + team}
         params = ['team:=' + team, 'team_name:=' + ('selfplay-' if args.opponents == 'self' else 'candidate-') + team,
                   'stage:=2', 'max_ticks:=' + str(args.max_ticks), 'log_dir:=' + str(log_dir),
@@ -435,7 +463,7 @@ def main():
             params += ['ai_provider:=deepseek', 'ai_model:=deepseek-flash',
                        'ai_gateway:=' + base + '/v1/chat/completions']
             extra['DEEPSEEK_API_KEY'] = 'practice-' + team
-        command = [str(binary), '--ros-args']
+        command = [str(executable), '--ros-args']
         if args.opponents == 'self':
             command += ['-r', '__node:=rmtc_selfplay_' + team]
         for param in params:
@@ -460,13 +488,24 @@ def main():
         launch(judge_command, 'judge', judge_environment)
         wait_state(lambda s: s.get('status', {}).get('ready'), 30)
         for variant in args.variants.split(','):
-            for seat, repetition in itertools.product(seats, range(1, args.repetitions + 1)):
+            jobs = [(seat, repetition, None, None) for seat, repetition in itertools.product(seats, range(1, args.repetitions + 1))]
+            if lineup:
+                jobs = [(next(t for t, name in assigned.items() if name == lineup['lineup'][0]), repetition, index, assigned)
+                        for (index, assigned), repetition in itertools.product(schedule, range(1, args.repetitions + 1))]
+            for seat, repetition, arrangement, assigned in jobs:
                 label = variant + '-' + seat
+                if assigned:
+                    label += '-p' + str(arrangement).zfill(2)
                 if args.repetitions > 1:
                     label += '-r' + str(repetition)
                 controlled = list('ABCD') if args.opponents == 'self' else [seat]
                 candidates = {"ABCD"[("ABCD".index(seat) + offset) % 4]
                               for offset in range(args.candidate_count)}
+                specs = {team: {'params': args.param if team in candidates else args.opponent_param,
+                                'binary_sha256': binary_hash, 'frozen_binary': 'contestant'} for team in controlled}
+                if assigned:
+                    candidates = {seat}
+                    specs = {team: lineup['profiles'][name] for team, name in assigned.items()}
                 api('/api/start', {'stage': 2, 'tick_ms': args.tick_ms,
                     'max_ticks': args.max_ticks, 'bots': [s for s in 'ABCD' if s not in controlled],
                     'config': scenario(variant)})
@@ -474,8 +513,9 @@ def main():
                 log_dirs = {team: output / label if team == seat else output / label / 'peers' / team
                             for team in controlled}
                 bots = [start_contestant(team, log_dirs[team],
-                            args.param if team in candidates else args.opponent_param,
-                            label if team == seat else label + '-peer-' + team)
+                            specs[team]['params'],
+                            label if team == seat else label + '-peer-' + team,
+                            output / specs[team]['frozen_binary'])
                         for team in controlled]
                 time.sleep(1.5)
                 if any(bot.poll() is not None for bot in bots):
@@ -483,6 +523,11 @@ def main():
                 if args.opponents == 'self':
                     interfaces = audit_selfplay_interfaces(environment)
                     (output / (label + '-interfaces.json')).write_text(json.dumps(interfaces, indent=2))
+                if args.opponents == 'self':
+                    audit_assignments=assigned or {team:team for team in controlled}
+                    audit_profiles=lineup['profiles'] if assigned else {team:{'params':specs[team]['params']} for team in controlled}
+                    parameters = audit_parameters(environment, audit_assignments, audit_profiles, allowed_params)
+                    (output / (label + '-parameters.json')).write_text(json.dumps(parameters, indent=2))
                 api('/api/resume', {})
                 state = wait_state(lambda s: s.get('status', {}).get('finished'),
                                    args.max_ticks * args.tick_ms / 1000 + 40)
@@ -508,8 +553,8 @@ def main():
                 own_key = rank_key(own)
                 latencies = sorted(r['latency_ms'] for r in decisions)
                 result = dict(variant=variant, seat=seat, repetition=repetition, ai=args.ai, tick_ms=args.tick_ms,
-                    planner_params=args.param,
-                    binary_sha256=binary_hash, session_id=state.get('session_id'),
+                    planner_params=specs[seat]['params'],
+                    binary_sha256=specs[seat]['binary_sha256'], session_id=state.get('session_id'),
                     judge_core_source_sha256=judge_manifest['core_source_sha256'], damage_cap=500,
                     rank=1 + sum(rank_key(t) > own_key for t in teams),
                     strict_first=all(own_key > rank_key(t) for t in teams if t['team'] != seat),
@@ -534,7 +579,7 @@ def main():
                         raise RuntimeError('Controlled car score does not match v1.1 formula')
                     times = sorted(r['latency_ms'] for r in frames)
                     controllers[team] = dict(candidate=team in candidates, own=board,
-                        planner_params=args.param if team in candidates else args.opponent_param,
+                        planner_params=specs[team]['params'],
                         log_dir=str(log_dirs[team].relative_to(output)), decisions=len(frames),
                         frames_complete=complete, missing_ticks=missing,
                         rank=1 + sum(rank_key(t) > rank_key(board) for t in teams),
@@ -543,6 +588,11 @@ def main():
                         max_ms=max(times, default=0),
                         accepted_ai=sum(r['kind'] == 'ai' and r.get('accepted', False) for r in logs),
                         rejected_frames=sum(r['kind'] == 'perception_rejected' for r in logs))
+                if assigned:
+                    for team, controller in controllers.items():
+                        controller.update(profile=assigned[team], binary_sha256=specs[team]['binary_sha256'],
+                                          actions=dict(collections.Counter(r['action']['action'] for r in read_rows(log_dirs[team]) if r['kind']=='decision')))
+                    result.update(arrangement=arrangement, assignments=assigned, focal_profile=assigned[seat], case_label=label)
                 result.update(opponents=args.opponents, candidate_teams=sorted(candidates), controllers=controllers)
                 results.append(result)
                 (output / 'summary.json').write_text(json.dumps(results, ensure_ascii=False, indent=2))

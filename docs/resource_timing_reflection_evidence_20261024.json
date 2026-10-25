@@ -1,0 +1,754 @@
+{
+  "note": "Offline reflection only. Each car own legal logs, combined only after matches for resource conservation/timing. Aggregated totals must never enter live contestant input. 16 seat rotations on 4 maps, not 16 independent maps.",
+  "games": 16,
+  "mean_collected_pool_by_tick": {
+    "10": 102.5,
+    "20": 151.25,
+    "30": 170.625,
+    "40": 193.125,
+    "60": 196.875,
+    "100": 198.75
+  },
+  "pool_fully_collected_by_tick": {
+    "20": 0,
+    "40": 8,
+    "60": 13,
+    "100": 15
+  },
+  "median_last_observed_collection_tick": 40.5,
+  "no_high_task_cases": [
+    {
+      "variant": "interior91837",
+      "seat": "C",
+      "first_visible_high": null
+    },
+    {
+      "variant": "interior91837",
+      "seat": "D",
+      "first_visible_high": {
+        "tick": 28,
+        "position": [
+          5,
+          4
+        ],
+        "hp": 100.0,
+        "observed_resources": [
+          {
+            "id": "practice_12",
+            "position": [
+              1,
+              0
+            ],
+            "value": 20.0
+          }
+        ],
+        "observed_enemies": [],
+        "action": {
+          "action": "move",
+          "direction": "left",
+          "session_id": "practice-94750e94590b40f789f5a9e4d8deac9e",
+          "tick": 28
+        },
+        "target": [
+          1,
+          0
+        ],
+        "reason": "resource"
+      }
+    },
+    {
+      "variant": "interior83647",
+      "seat": "A",
+      "first_visible_high": null
+    },
+    {
+      "variant": "map62573",
+      "seat": "C",
+      "first_visible_high": null
+    }
+  ],
+  "cases": [
+    {
+      "variant": "interior91837",
+      "seat": "A",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 140.0,
+        "30": 140.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 40,
+      "focal_resource_final": 60.0,
+      "focal_resource_by_tick": {
+        "10": 30.0,
+        "20": 50.0,
+        "30": 50.0,
+        "40": 60.0,
+        "60": 60.0,
+        "100": 60.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "interior91837",
+      "seat": "B",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 130.0,
+        "30": 170.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 34,
+      "focal_resource_final": 80.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 20.0,
+        "30": 50.0,
+        "40": 80.0,
+        "60": 80.0,
+        "100": 80.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "interior91837",
+      "seat": "C",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 130.0,
+        "30": 130.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 40,
+      "focal_resource_final": 40.0,
+      "focal_resource_by_tick": {
+        "10": 30.0,
+        "20": 40.0,
+        "30": 40.0,
+        "40": 40.0,
+        "60": 40.0,
+        "100": 40.0
+      },
+      "high_task_completed": false,
+      "first_visible_high_tick": null
+    },
+    {
+      "variant": "interior91837",
+      "seat": "D",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 120.0,
+        "30": 150.0,
+        "40": 190.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 41,
+      "focal_resource_final": 20.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 20.0,
+        "30": 20.0,
+        "40": 20.0,
+        "60": 20.0,
+        "100": 20.0
+      },
+      "high_task_completed": false,
+      "first_visible_high_tick": 28
+    },
+    {
+      "variant": "map74921",
+      "seat": "A",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 130.0,
+        "20": 190.0,
+        "30": 200.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 21,
+      "focal_resource_final": 50.0,
+      "focal_resource_by_tick": {
+        "10": 30.0,
+        "20": 40.0,
+        "30": 50.0,
+        "40": 50.0,
+        "60": 50.0,
+        "100": 50.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "map74921",
+      "seat": "B",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 130.0,
+        "20": 160.0,
+        "30": 170.0,
+        "40": 170.0,
+        "60": 170.0,
+        "100": 180.0
+      },
+      "last_observed_collection_tick": 188,
+      "focal_resource_final": 50.0,
+      "focal_resource_by_tick": {
+        "10": 40.0,
+        "20": 40.0,
+        "30": 40.0,
+        "40": 40.0,
+        "60": 40.0,
+        "100": 40.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "map74921",
+      "seat": "C",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 130.0,
+        "20": 190.0,
+        "30": 200.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 21,
+      "focal_resource_final": 60.0,
+      "focal_resource_by_tick": {
+        "10": 40.0,
+        "20": 60.0,
+        "30": 60.0,
+        "40": 60.0,
+        "60": 60.0,
+        "100": 60.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "map74921",
+      "seat": "D",
+      "batch": "current-screen-one-1792835276082415353",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 130.0,
+        "20": 180.0,
+        "30": 180.0,
+        "40": 190.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 60,
+      "focal_resource_final": 40.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 40.0,
+        "30": 40.0,
+        "40": 40.0,
+        "60": 40.0,
+        "100": 40.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 12
+    },
+    {
+      "variant": "interior83647",
+      "seat": "A",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 80.0,
+        "20": 130.0,
+        "30": 170.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 35,
+      "focal_resource_final": 40.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 30.0,
+        "30": 40.0,
+        "40": 40.0,
+        "60": 40.0,
+        "100": 40.0
+      },
+      "high_task_completed": false,
+      "first_visible_high_tick": null
+    },
+    {
+      "variant": "interior83647",
+      "seat": "B",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 80.0,
+        "20": 130.0,
+        "30": 160.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 35,
+      "focal_resource_final": 30.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 20.0,
+        "30": 20.0,
+        "40": 30.0,
+        "60": 30.0,
+        "100": 30.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "interior83647",
+      "seat": "C",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 80.0,
+        "20": 130.0,
+        "30": 170.0,
+        "40": 200.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 35,
+      "focal_resource_final": 50.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 40.0,
+        "30": 50.0,
+        "40": 50.0,
+        "60": 50.0,
+        "100": 50.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 7
+    },
+    {
+      "variant": "interior83647",
+      "seat": "D",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 80.0,
+        "20": 120.0,
+        "30": 150.0,
+        "40": 180.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 51,
+      "focal_resource_final": 90.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 40.0,
+        "30": 60.0,
+        "40": 90.0,
+        "60": 90.0,
+        "100": 90.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 7
+    },
+    {
+      "variant": "map62573",
+      "seat": "A",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 170.0,
+        "30": 190.0,
+        "40": 190.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 58,
+      "focal_resource_final": 30.0,
+      "focal_resource_by_tick": {
+        "10": 10.0,
+        "20": 30.0,
+        "30": 30.0,
+        "40": 30.0,
+        "60": 30.0,
+        "100": 30.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 4
+    },
+    {
+      "variant": "map62573",
+      "seat": "B",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 160.0,
+        "30": 180.0,
+        "40": 190.0,
+        "60": 190.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 84,
+      "focal_resource_final": 70.0,
+      "focal_resource_by_tick": {
+        "10": 50.0,
+        "20": 60.0,
+        "30": 70.0,
+        "40": 70.0,
+        "60": 70.0,
+        "100": 70.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    },
+    {
+      "variant": "map62573",
+      "seat": "C",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 170.0,
+        "30": 180.0,
+        "40": 190.0,
+        "60": 200.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 49,
+      "focal_resource_final": 30.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 30.0,
+        "30": 30.0,
+        "40": 30.0,
+        "60": 30.0,
+        "100": 30.0
+      },
+      "high_task_completed": false,
+      "first_visible_high_tick": null
+    },
+    {
+      "variant": "map62573",
+      "seat": "D",
+      "batch": "current-screen-two-1792835277116615640",
+      "total_resource_final": 200.0,
+      "total_resource_by_tick": {
+        "10": 100.0,
+        "20": 170.0,
+        "30": 190.0,
+        "40": 190.0,
+        "60": 190.0,
+        "100": 200.0
+      },
+      "last_observed_collection_tick": 67,
+      "focal_resource_final": 60.0,
+      "focal_resource_by_tick": {
+        "10": 20.0,
+        "20": 50.0,
+        "30": 60.0,
+        "40": 60.0,
+        "60": 60.0,
+        "100": 60.0
+      },
+      "high_task_completed": true,
+      "first_visible_high_tick": 0
+    }
+  ],
+  "late_high_resource_own_observations": [
+    {
+      "tick": 28,
+      "position": [
+        5,
+        4
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        1,
+        0
+      ],
+      "reason": "resource",
+      "observed_resources": [
+        {
+          "id": "practice_12",
+          "position": [
+            1,
+            0
+          ],
+          "value": 20.0
+        }
+      ],
+      "observed_enemies": []
+    },
+    {
+      "tick": 29,
+      "position": [
+        4,
+        4
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        1,
+        0
+      ],
+      "reason": "resource",
+      "observed_resources": [
+        {
+          "id": "practice_12",
+          "position": [
+            1,
+            0
+          ],
+          "value": 20.0
+        },
+        {
+          "id": "practice_3",
+          "position": [
+            0,
+            0
+          ],
+          "value": 10.0
+        }
+      ],
+      "observed_enemies": [
+        {
+          "defending": false,
+          "hp": 100.0,
+          "position": [
+            0,
+            4
+          ],
+          "protected": false,
+          "team": "B"
+        }
+      ]
+    },
+    {
+      "tick": 30,
+      "position": [
+        3,
+        4
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        1,
+        0
+      ],
+      "reason": "resource",
+      "observed_resources": [
+        {
+          "id": "practice_12",
+          "position": [
+            1,
+            0
+          ],
+          "value": 20.0
+        },
+        {
+          "id": "practice_3",
+          "position": [
+            0,
+            0
+          ],
+          "value": 10.0
+        }
+      ],
+      "observed_enemies": [
+        {
+          "defending": false,
+          "hp": 100.0,
+          "position": [
+            0,
+            3
+          ],
+          "protected": false,
+          "team": "B"
+        }
+      ]
+    },
+    {
+      "tick": 31,
+      "position": [
+        2,
+        4
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        1,
+        0
+      ],
+      "reason": "resource",
+      "observed_resources": [
+        {
+          "id": "practice_12",
+          "position": [
+            1,
+            0
+          ],
+          "value": 20.0
+        },
+        {
+          "id": "practice_3",
+          "position": [
+            0,
+            0
+          ],
+          "value": 10.0
+        }
+      ],
+      "observed_enemies": [
+        {
+          "defending": false,
+          "hp": 100.0,
+          "position": [
+            0,
+            2
+          ],
+          "protected": false,
+          "team": "B"
+        }
+      ]
+    },
+    {
+      "tick": 32,
+      "position": [
+        2,
+        3
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        1,
+        0
+      ],
+      "reason": "resource",
+      "observed_resources": [
+        {
+          "id": "practice_12",
+          "position": [
+            1,
+            0
+          ],
+          "value": 20.0
+        },
+        {
+          "id": "practice_3",
+          "position": [
+            0,
+            0
+          ],
+          "value": 10.0
+        }
+      ],
+      "observed_enemies": [
+        {
+          "defending": false,
+          "hp": 100.0,
+          "position": [
+            0,
+            1
+          ],
+          "protected": false,
+          "team": "B"
+        }
+      ]
+    },
+    {
+      "tick": 33,
+      "position": [
+        2,
+        2
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        1,
+        0
+      ],
+      "reason": "resource",
+      "observed_resources": [
+        {
+          "id": "practice_12",
+          "position": [
+            1,
+            0
+          ],
+          "value": 20.0
+        }
+      ],
+      "observed_enemies": [
+        {
+          "defending": false,
+          "hp": 100.0,
+          "position": [
+            0,
+            0
+          ],
+          "protected": false,
+          "team": "B"
+        }
+      ]
+    },
+    {
+      "tick": 34,
+      "position": [
+        2,
+        1
+      ],
+      "hp": 100.0,
+      "resource_value": 20.0,
+      "target": [
+        14,
+        4
+      ],
+      "reason": "explore",
+      "observed_resources": [],
+      "observed_enemies": [
+        {
+          "defending": false,
+          "hp": 100.0,
+          "position": [
+            1,
+            0
+          ],
+          "protected": false,
+          "team": "B"
+        }
+      ]
+    }
+  ]
+}

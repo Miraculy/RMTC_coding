@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 import statistics
 
+from strategy_profiles import case_key, arrangements
+
 
 def read_json(path):
     return json.loads(path.read_text())
@@ -30,13 +32,56 @@ def load_batches(paths):
         source = path / 'strategy_eval.py'
         if source.exists() and hashlib.sha256(source.read_bytes()).hexdigest() != run['evaluator_sha256']:
             raise ValueError(f'Evaluator snapshot mismatch: {path}')
-        for row in read_json(path / 'summary.json'):
-            key = (row['variant'], row['seat'], row.get('repetition', 1))
+        for name, digest in run.get('evaluator_modules', {}).items():
+            if hashlib.sha256((path / name).read_bytes()).hexdigest() != digest:
+                raise ValueError(f'Evaluator dependency mismatch: {path}, {name}')
+        profiles = run.get('profiles')
+        if profiles:
+            manifest = read_json(path / 'lineup.json')
+            if manifest['profiles'] != profiles or manifest['lineup'] != run['lineup']:
+                raise ValueError('Profile manifest mismatch')
+            for name, spec in profiles.items():
+                if hashlib.sha256((path / spec['frozen_binary']).read_bytes()).hexdigest() != spec['binary_sha256']:
+                    raise ValueError(f'Frozen profile mismatch: {name}')
+        schedules = dict(arrangements(run['lineup'], run['lineup_schedule'], run['arrangements'])) if profiles else {}
+        rows = read_json(path / 'summary.json')
+        if profiles:
+            expected_keys = {(variant, next(t for t,n in a.items() if n == run['lineup'][0]), repetition, i)
+                for variant in run['variants'].split(',') for i,a in schedules.items()
+                for repetition in range(1, run['repetitions'] + 1)}
+            if {case_key(r) for r in rows} != expected_keys or len(rows) != len(expected_keys):
+                raise ValueError('Incomplete planned profile batch')
+        for row in rows:
+            key = case_key(row)
             if key in cases:
                 raise ValueError(f'Duplicate scenario/seat/repetition: {key}')
-            if row['binary_sha256'] != run['binary_sha256']:
+            if not profiles and row['binary_sha256'] != run['binary_sha256']:
                 raise ValueError(f'Mixed binary within a batch: {path}')
             controllers = row.get('controllers') or {row['seat']: row}
+            if profiles:
+                if schedules.get(row['arrangement']) != row['assignments']:
+                    raise ValueError('Arrangement does not match frozen schedule')
+                if set(controllers) != set('ABCD') or set(row['assignments']) != set('ABCD'):
+                    raise ValueError('Incomplete profile assignment')
+                if sorted(row['assignments'].values()) != sorted(run['lineup']):
+                    raise ValueError('Wrong profile lineup')
+                if row['focal_profile'] != row['assignments'][row['seat']] or row['focal_profile'] != run['lineup'][0]:
+                    raise ValueError('Wrong focal profile')
+                focal = profiles[row['focal_profile']]
+                if row['binary_sha256'] != focal['binary_sha256'] or row['planner_params'] != focal['params']:
+                    raise ValueError('Focal executable/parameters mismatch')
+                parameters = read_json(path / (row['case_label'] + '-parameters.json'))
+                for team, controller in controllers.items():
+                    name = row['assignments'][team]; spec = profiles[name]
+                    if (controller.get('profile') != name or controller.get('binary_sha256') != spec['binary_sha256']
+                            or controller['planner_params'] != spec['params'] or parameters[team]['profile'] != name):
+                        raise ValueError('Controller profile mismatch')
+                    expected = {p.split(':=', 1)[0]: json.loads(p.split(':=', 1)[1]) for p in spec['params']}
+                    actual = parameters[team]['declared_parameters']
+                    if parameters[team]['checked_parameters'] != expected or actual.get('team') != team or actual.get('stage') != 2:
+                        raise ValueError('Runtime parameter audit mismatch')
+                    if any(type(actual.get(k)) is not type(v) or actual.get(k) != v for k, v in expected.items()):
+                        raise ValueError('Runtime profile parameters differ')
             receipt_mismatches = receipt_action_mismatches = missing_receipts = 0
             for team, controller in controllers.items():
                 board = next(t for t in row['teams'] if t['team'] == team)
@@ -76,8 +121,8 @@ def load_batches(paths):
                         # legitimately differ from any submitted action.
                         receipt_action_mismatches += 1
                 if run.get('opponents') == 'self':
-                    label = row['variant'] + '-' + row['seat']
-                    if row.get('repetition', 1) > 1:
+                    label = row.get('case_label') or row['variant'] + '-' + row['seat']
+                    if 'case_label' not in row and row.get('repetition', 1) > 1:
                         label += '-r' + str(row['repetition'])
                     interface = read_json(path / (label + '-interfaces.json'))[team]
                     expected_subs = {'/team_' + team + '/perception', '/referee/mission',
@@ -96,6 +141,21 @@ def load_batches(paths):
     return cases
 
 
+def validate_profile_pair(old, new):
+    x, y = old['row'], new['row']
+    if (x['seat'] != y['seat'] or x['arrangement'] != y['arrangement']
+            or old['run']['lineup_schedule'] != new['run']['lineup_schedule']):
+        raise ValueError('Unequal profile schedule')
+    for team in 'ABCD':
+        if team == x['seat']:
+            continue
+        a, b = x['controllers'][team], y['controllers'][team]
+        if any(a.get(k) != b.get(k) for k in ['profile', 'binary_sha256', 'planner_params']):
+            raise ValueError('Unequal heterogeneous opponent: ' + team)
+    if old['run'].get('evaluator_sha256') != new['run'].get('evaluator_sha256') or old['run'].get('evaluator_modules') != new['run'].get('evaluator_modules'):
+        raise ValueError('Profile cohorts must use the same frozen evaluator')
+
+
 def compare(controls, candidates):
     a, b = load_batches(controls), load_batches(candidates)
     if not a or a.keys() != b.keys():
@@ -105,8 +165,14 @@ def compare(controls, candidates):
         old, new = a[key], b[key]
         for field in ['binary_sha256', 'judge_core_source_sha256', 'damage_cap', 'tick_ms',
                       'max_ticks', 'no_events', 'ai', 'opponents', 'candidate_count', 'opponent_params']:
+            if field == 'binary_sha256' and old['run'].get('profiles'):
+                continue
             if old['run'].get(field) != new['run'].get(field):
                 raise ValueError(f'Unequal {field}: {key}')
+        if bool(old['run'].get('profiles')) != bool(new['run'].get('profiles')):
+            raise ValueError('Cannot mix legacy and profile cohorts')
+        if old['run'].get('profiles'):
+            validate_profile_pair(old, new)
         if old['config'] != new['config']:
             raise ValueError(f'Unequal deployed configuration: {key}')
         x, y = old['row'], new['row']
