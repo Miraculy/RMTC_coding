@@ -1,0 +1,19 @@
+{
+  "build_contestant.sh": "ae4cc99aea7e4ea4a36c5636461792f778d4972f3f3145afecc487f65e11d29c",
+  "src/rmtc_bot/CMakeLists.txt": "726f348ba342b03feb8b1e50720d0f793810c21f07db6635776c6aead77bcf09",
+  "src/rmtc_bot/config/contestant.yaml": "75c6fb59b16d294ebd956448f3f974d0b10d57c67421b8ed687f6d39360afbd6",
+  "src/rmtc_bot/include/rmtc_bot/ai.hpp": "8c9591b122c4b7fa61387f4a4460acfa69a94af0a93c569323ea2307860f12bb",
+  "src/rmtc_bot/include/rmtc_bot/core.hpp": "8643716ddc9046570d2f80a62a7c1474450e097fbf9de3149d7fedbda8fa30f1",
+  "src/rmtc_bot/package.xml": "87001d0e17108b8f3e2b4974ab143c2ae08d3dae8edb089abeff9070c7e011a8",
+  "src/rmtc_bot/src/ai.cpp": "612566b19dca4b6045735db43bbb3e15d4f359c79e267a5075593029963d5aa7",
+  "src/rmtc_bot/src/core.cpp": "cd6470a5d42c27bd08e6e08d5c57aef513c27452557409d2aa282b1017b140e3",
+  "src/rmtc_bot/src/node.cpp": "1ea04506a59e9bb6078a1b4f72e9bf9c9788e7442a2e1ef00d4abfc325a3473b",
+  "src/rmtc_bot/test/ai_test.cpp": "bc3b052654fccb7cdbc13294a85aef81c8bb698339d17db39ddd67e54c21c62f",
+  "src/rmtc_bot/test/core_test.cpp": "11e68af2199a3d3cd67bc93b992e676e1121ccf2457e81bbfa8e87531b7c28ca",
+  "src/rmtc_bot/tools/ai_benchmark.cpp": "e61c8acce9cb0e4564e28c960495d364280b3ec1c7d3f6e5cd8cdd403ab9aa4b",
+  "src/rmtc_bot/tools/event_revision_benchmark.cpp": "b1989e82213b6ad53ff154ff28e6e5747f6d9855fb963c58a5ced99dbb58f986",
+  "tools/resource_audit.py": "14c7d0ae4b0ec83cf6361c3ab7600194edf9c685ce119b253f89cae2221b0bb7",
+  "tools/resource_pair_audit.py": "84799072c3875a9bf8cc8573a02beba05536c336077b9f8a5a7d909175dbdae3",
+  "tools/resource_recovery_audit.py": "48d75e676127b4d99429d96420d260a906266408d0cffba9d0889db02bae44ad",
+  "tools/strategy_eval.py": "20833c45b39051dd5fc49b74f4916f028b7e35090a8b088ab1ecf14fcdbbecca"
+}

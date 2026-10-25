@@ -95,3 +95,13 @@
 本轮6批12整场24000受控决策、12接口，0–499完整，非法/感知拒绝/缺回执/Tick不符/动作类型不符均0。最大P95 4.281691ms，最大16.942638ms；385份源码文档与新产物未发现密钥，私密文件600，全部进程已结束。控制及候选分别冻结同一6332...二进制；purity-joint-candidate-known-1792795787459385267保存comparison.json、event-pair-audit.json、round-audit.json，各批保存逐车purity-audit.json和复算源码。
 
 网关自身审计确认224次real模式上游成功，其中56次属于八个焦点车，其他属于独立对手；调用数分开记录。最终进程检查为零残留。
+
+
+## 2026-10-24 资源专项补充
+
+用户新增资源优化要求后，已实现并各完成16对闭环验证的三个独立候选：resource_route_pickups、resource_race_yield、resource_fresh_returns。平均资源分别50→48.75、50→50、50→49.375，三个core/node默认均false。第二项仅有伤害分增益，不能当资源增加；第三项暴露持续三车争格、资源仍在但无法进入的反例。完整数据、归属哈希、原始异常及默认回归见 [RESOURCE_OPTIMIZATION_20261024.md](RESOURCE_OPTIMIZATION_20261024.md) 和 VALIDATION.md 最新节。原目标继续paused，未宣称全部新方向完成，也未恢复旧实验。下一步需先从本车合法失败动作反馈验证可执行的到达机会；目前没有已证明的通用争格解锁策略。
+
+
+## 2026-10-25 资源专项方案一交付
+
+失败回执驱动的限时备选已实现并完成独立对照，默认 `resource_blocked_recovery=false`。主组16对仅1对R50→70，其余不变；防御倾向同图重复收益，内置补测无收益。它是局部闭环修复，不代表“大部分条件资源显著提高”。源码、150 GTest/2 CTest、24有效配对、默认回归和失败排除均见 [RESOURCE_RECOVERY_20261025.md](RESOURCE_RECOVERY_20261025.md)。新文献的版本核对、已实现功能和后续假设见 [RESOURCE_LITERATURE_REVIEW_20261025.md](RESOURCE_LITERATURE_REVIEW_20261025.md)。本轮交付后暂停下一方案，待用户批准；原目标继续暂停。

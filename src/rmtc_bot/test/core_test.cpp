@@ -71,6 +71,29 @@ World opening_route_world(int tick=5) {
   for(int y=4;y<=12;++y) w.explored.insert({13,y});
   return w;
 }
+World resource_pickup_world(int tick=5) {
+  World w;auto f=frame(tick);
+  f.entities.push_back({"resource_normal","near","",{8,10},100,10,false,false});
+  f.entities.push_back({"resource_high","goal","",{10,10},100,20,false,false});
+  f.missions.push_back({{"id","high"},{"type","high_resources"},{"target",1}});w.update(f);
+  for(int x=0;x<f.width;++x) for(int y=0;y<f.height;++y) w.explored.insert({x,y});
+  return w;
+}
+World resource_race_world() {
+  World w;
+  for(int tick=10;tick<=11;++tick) {
+    auto f=frame(tick);
+    f.entities.push_back({"resource_high","raced","",{10,8},100,20,false,false});
+    f.entities.push_back({"resource_normal","other","",{8,11},100,10,false,false});
+    f.entities.push_back({"robot","B","B",{tick==10?12:11,8},100,0,false,false});
+    f.missions.push_back({{"id","high"},{"type","high_resources"},{"target",1}});
+    f.missions.push_back({{"id","normal"},{"type","normal_resources"},{"target",2}});
+    w.update(f);
+  }
+  // Use the actual opening footprint and the public collection tasks. A fully
+  // explored synthetic map instead activates optional hunting before Tick 100.
+  return w;
+}
 }
 TEST(Protocol, RelativeWorldAxesAndOverlap) {
   EXPECT_EQ(relative_position(grid(1,-2)),(Pos{1,-2}));
@@ -1144,6 +1167,255 @@ TEST(Planner, OpeningInformationStillAllowsImmediateFinisherAndClearsItsEstimate
   EXPECT_FALSE(candidate.opening_route_evaluation.is_null());
   w.current.alive=false;candidate.decide(w);EXPECT_TRUE(candidate.opening_route_evaluation.is_null());
   w.current.alive=true;candidate.decide(w);candidate.reset();EXPECT_TRUE(candidate.opening_route_evaluation.is_null());
+}
+TEST(Planner, ResourceRouteCollectsObservedPickupWithoutDelayingOriginalGoal) {
+  auto w=resource_pickup_world();auto explored=w.explored;auto resources=w.resources.size();
+  Planner baseline;auto old=baseline.decide(w);ASSERT_EQ(old.type,"move");ASSERT_EQ(old.direction,"right");
+  PlannerConfig config;config.resource_route_pickups=true;Planner candidate(2,500,config);
+  auto action=candidate.decide(w);EXPECT_EQ(action.type,"move");EXPECT_EQ(action.direction,"down");
+  EXPECT_EQ(candidate.target(),baseline.target());EXPECT_EQ(candidate.target(),std::optional<Pos>(Pos{10,10}));
+  const auto &e=candidate.resource_route_evaluation;ASSERT_FALSE(e.is_null());
+  EXPECT_EQ(e["pickup"],Json({8,10}));EXPECT_EQ(e["pickup_value"],10);
+  EXPECT_EQ(e["steps"],4);EXPECT_EQ(e["via_steps"],4);EXPECT_EQ(e["pickup_arrival_steps"],2);
+  EXPECT_DOUBLE_EQ(e["cost"],4);EXPECT_EQ(e["cost"],e["via_cost"]);
+  EXPECT_EQ(w.explored,explored);EXPECT_EQ(w.resources.size(),resources);EXPECT_EQ(w.history.size(),1u);
+  EXPECT_EQ(w.current.resource_value,0);EXPECT_EQ(w.normal_collected,0);
+}
+TEST(Planner, ResourceRouteRejectsDetourStalePickupAndUncoveredRace) {
+  for(int scenario=0;scenario<5;++scenario) {
+    auto w=resource_pickup_world();
+    if(scenario==0) w.resources["near"].pos={8,11}; // Two extra moves to the original goal.
+    if(scenario==1) --w.resources["near"].seen;
+    if(scenario==2) w.current.radius=3; // A rival just outside view can win the two-step pickup.
+    if(scenario==3) w.current.entities.push_back({"robot","B","B",{7,10},100,0,false,true});
+    if(scenario==4) w.obstacles[{8,9}]={0,5};
+    Planner baseline;PlannerConfig config;config.resource_route_pickups=true;Planner candidate(2,500,config);
+    EXPECT_EQ(candidate.decide(w).json(w.current),baseline.decide(w).json(w.current))<<scenario;
+    EXPECT_TRUE(candidate.resource_route_evaluation.is_null())<<scenario;
+  }
+}
+TEST(Planner, ResourceRouteAllowsTwoExtraMovesOnlyWithOriginalGoalRaceMargin) {
+  auto w=resource_pickup_world();w.resources["near"].pos={8,9};w.resources["goal"].pos={9,8};
+  Planner baseline;ASSERT_EQ(baseline.decide(w).direction,"right");
+  PlannerConfig config;config.resource_route_pickups=true;Planner candidate(2,500,config);
+  auto action=candidate.decide(w);EXPECT_EQ(action.direction,"down");
+  EXPECT_EQ(candidate.target(),baseline.target());
+  const auto &e=candidate.resource_route_evaluation;ASSERT_FALSE(e.is_null());
+  EXPECT_EQ(e["steps"],1);EXPECT_EQ(e["via_steps"],3);
+  EXPECT_LT(e["via_steps"].get<int>(),e["goal_rival_movement_lower_bound"].get<int>());
+  w.current.entities.push_back({"robot","B","B",{11,8},100,0,false,true});
+  Planner guarded(2,500,config);guarded.decide(w);EXPECT_TRUE(guarded.resource_route_evaluation.is_null());
+}
+TEST(Planner, ResourceRoutePreservesStagesEventsAndExistingExperiments) {
+  for(int scenario=0;scenario<8;++scenario) {
+    auto w=resource_pickup_world();PlannerConfig config;int stage=2;
+    if(scenario==0) w.current.tick=40;
+    if(scenario==1) stage=1;
+    if(scenario==2) w.events.merge(batch(w.current,Json::array({area("purity",1,2)})),w.current);
+    if(scenario==3) config.tactical_forecast=true;
+    if(scenario==4) config.information_paths=true;
+    if(scenario==5) config.resource_beam=true;
+    if(scenario==6) config.opening_route_information=true;
+    if(scenario==7) {
+      w.current.resource_value=120;w.current.completed.insert("high");
+    }
+    Planner baseline(stage,500,config);config.resource_route_pickups=true;Planner candidate(stage,500,config);
+    EXPECT_EQ(candidate.decide(w).json(w.current),baseline.decide(w).json(w.current))<<scenario;
+    EXPECT_TRUE(candidate.resource_route_evaluation.is_null())<<scenario;
+  }
+}
+TEST(Planner, ResourceRouteKeepsImmediateFinisherAndClearsDiagnostics) {
+  auto w=resource_pickup_world();w.current.entities.push_back({"robot","B","B",{8,6},10,0,false,false});
+  Planner baseline;PlannerConfig config;config.resource_route_pickups=true;Planner candidate(2,500,config);
+  auto action=candidate.decide(w);EXPECT_EQ(action.type,"attack");
+  EXPECT_EQ(action.json(w.current),baseline.decide(w).json(w.current));
+  EXPECT_FALSE(candidate.resource_route_evaluation.is_null());
+  w.current.alive=false;candidate.decide(w);EXPECT_TRUE(candidate.resource_route_evaluation.is_null());
+  w.current.alive=true;candidate.decide(w);candidate.reset();EXPECT_TRUE(candidate.resource_route_evaluation.is_null());
+}
+TEST(Planner, ResourceRaceYieldsToObservedFinalApproachWithoutDeletingMemory) {
+  auto w=resource_race_world();Planner baseline;baseline.decide(w);
+  ASSERT_EQ(baseline.target(),std::optional<Pos>(Pos{10,8}));
+  PlannerConfig config;config.resource_race_yield=true;Planner candidate(2,500,config);
+  auto action=candidate.decide(w);EXPECT_EQ(candidate.target(),std::optional<Pos>(Pos{8,11}));
+  EXPECT_EQ(action.type,"move");EXPECT_EQ(action.direction,"down");
+  ASSERT_EQ(candidate.resource_race_evaluations.size(),1u);
+  const auto &e=candidate.resource_race_evaluations[0];
+  EXPECT_EQ(e["enemy_before"],Json({12,8}));EXPECT_EQ(e["enemy_now"],Json({11,8}));
+  EXPECT_EQ(e["own_arrival_lower_bound"],2);EXPECT_EQ(e["enemy_arrival_lower_bound"],1);
+  EXPECT_DOUBLE_EQ(e["previous_discount"],1);EXPECT_DOUBLE_EQ(e["approach_discount"],.1);
+  EXPECT_EQ(w.resources.size(),2u);EXPECT_EQ(w.resources.at("raced").value,20);
+  EXPECT_EQ(w.current.resource_value,0);EXPECT_EQ(w.high_collected,0);
+}
+TEST(Planner, ResourceRaceNeedsContiguousMovementFreshResourceAndEarlyWindow) {
+  for(int scenario=0;scenario<7;++scenario) {
+    auto w=resource_race_world();PlannerConfig config;int stage=2;
+    if(scenario==0) w.history.pop_front();
+    if(scenario==1) w.history.front().entities.back().pos={11,8};
+    if(scenario==2) w.history.front().entities.back().pos={13,8};
+    if(scenario==3) --w.resources["raced"].seen;
+    if(scenario==4) w.current.tick=40;
+    if(scenario==5) stage=1;
+    if(scenario==6) config.race_aware_resources=true;
+    Planner baseline(stage,500,config);config.resource_race_yield=true;Planner candidate(stage,500,config);
+    EXPECT_EQ(candidate.decide(w).json(w.current),baseline.decide(w).json(w.current))<<scenario;
+    EXPECT_TRUE(candidate.resource_race_evaluations.empty())<<scenario;
+  }
+}
+TEST(Planner, ResourceRaceKeepsPossibleFinisherAndKnownEventContexts) {
+  for(int scenario=0;scenario<2;++scenario) {
+    auto w=resource_race_world();
+    if(scenario==0) {
+      w.current.entities.back().pos={9,8};w.current.entities.back().hp=10;
+      w.history.front().entities.back().pos={9,9};
+    } else w.events.merge(batch(w.current,Json::array({area("purity",1,2)})),w.current);
+    Planner baseline;PlannerConfig config;config.resource_race_yield=true;Planner candidate(2,500,config);
+    EXPECT_EQ(candidate.decide(w).json(w.current),baseline.decide(w).json(w.current));
+    EXPECT_TRUE(candidate.resource_race_evaluations.empty());
+  }
+}
+TEST(Planner, ResourceRaceClearsDiagnosticsAfterDeathOrReset) {
+  auto w=resource_race_world();PlannerConfig config;config.resource_race_yield=true;Planner candidate(2,500,config);
+  candidate.decide(w);ASSERT_FALSE(candidate.resource_race_evaluations.empty());
+  w.current.alive=false;candidate.decide(w);EXPECT_TRUE(candidate.resource_race_evaluations.empty());
+  w.current.alive=true;candidate.decide(w);candidate.reset();EXPECT_TRUE(candidate.resource_race_evaluations.empty());
+}
+TEST(Planner, FreshReturnComparesVisibleResourceAtFullValue) {
+  World w;auto f=frame(10);
+  // Five moves within the square vision, versus the reachable unknown strip.
+  // A four-move axis resource already wins even with the old 0.6 discount.
+  f.entities.push_back({"resource_normal","return","",{7,4},100,10,false,false});
+  w.update(f);w.spawn=Pos{3,4};
+  Planner baseline;baseline.decide(w);EXPECT_EQ(baseline.goal_reason,"explore");
+  PlannerConfig config;config.resource_fresh_returns=true;Planner candidate(2,500,config);
+  auto action=candidate.decide(w);
+  EXPECT_EQ(candidate.target(),std::optional<Pos>({7,4}));EXPECT_EQ(candidate.goal_reason,"resource");
+  EXPECT_EQ(action.type,"move");EXPECT_EQ(action.direction,"up");
+  EXPECT_EQ(w.resources.size(),1u);EXPECT_EQ(w.current.resource_value,0);
+}
+TEST(Planner, FreshReturnPreservesStaleLateEventAndFirstStageBehavior) {
+  for(int scenario=0;scenario<5;++scenario) {
+    World w;auto f=frame(scenario==1?40:10);
+    f.entities.push_back({"resource_normal","return","",{8,4},100,10,false,false});
+    w.update(f);w.spawn=Pos{3,4};int stage=scenario==2?1:2;
+    if(scenario==0) w.resources.begin()->second.seen=f.tick-1;
+    if(scenario==3) w.events.merge(batch(f,Json::array({area("purity",30,50)})),f);
+    PlannerConfig config;config.resource_fresh_returns=true;
+    if(scenario==4) config.tactical_forecast=true;
+    auto control=config;control.resource_fresh_returns=false;
+    Planner baseline(stage,500,control),candidate(stage,500,config);
+    EXPECT_EQ(baseline.decide(w).json(f),candidate.decide(w).json(f))<<scenario;
+    EXPECT_EQ(baseline.target(),candidate.target())<<scenario;
+  }
+}
+namespace {
+Frame blocked_resource_frame(int tick=10) {
+  auto f=frame(tick);f.resource_value=50;
+  f.entities={{"resource_normal","contested","",{9,8},100,10,false,false},
+    {"resource_normal","alternative","",{8,12},100,10,false,false},
+    {"robot","B","B",{10,8},100,0,false,false},
+    {"robot","C","C",{9,7},100,0,false,false}};
+  f.missions.push_back({{"id","normal"},{"type","normal_resources"},{"target",2}});
+  return f;
+}
+void blocked_receipt(Frame &f) {
+  ++f.tick;f.action_tick=f.tick-1;f.action_type="move";f.action_error="E_BLOCKED";f.moved=false;
+}
+void prime_blocked_resource(World &w,Planner &p,Frame &f) {
+  w.update(f);w.normal_collected=1;w.high_collected=2;
+  EXPECT_EQ(p.decide(w).direction,"right");
+  blocked_receipt(f);w.update(f);EXPECT_EQ(p.decide(w).direction,"right");
+  blocked_receipt(f);w.update(f);
+}
+}
+TEST(Perception, OptionalFailureReceiptDoesNotInventADestinationOrRejectLegacyInput) {
+  auto j=perception(12);j["self"]["last_action"]={{"tick",11},{"action","move"},{"error","E_BLOCKED"},{"moved",false}};
+  auto f=parse_frame(j);EXPECT_EQ(f.action_type,"move");EXPECT_EQ(f.action_error,"E_BLOCKED");EXPECT_FALSE(f.moved);
+  j["self"]["last_action"].erase("error");EXPECT_TRUE(parse_frame(j).action_error.empty());
+  j["self"]["last_action"]["error"]=42;EXPECT_TRUE(parse_frame(j).action_error.empty());
+}
+TEST(Planner, BlockedRecoveryUsesConfirmedFailuresAndCompletesAVisibleAlternative) {
+  PlannerConfig c;c.resource_blocked_recovery=true;Planner p(2,500,c);World w;auto f=blocked_resource_frame();
+  prime_blocked_resource(w,p,f);auto remembered=w.resources.size();
+  auto a=p.decide(w);ASSERT_EQ(a.type,"move");ASSERT_EQ(a.direction,"down");
+  EXPECT_EQ(p.resource_recovery_evaluation["status"],"started");
+  EXPECT_EQ(p.resource_recovery_evaluation["failed_receipts"],2);
+  EXPECT_EQ(p.resource_recovery_evaluation["steps"],4);
+  EXPECT_EQ(p.resource_recovery_evaluation["visible_rival_distance"],6);
+  EXPECT_EQ(w.resources.size(),remembered);EXPECT_EQ(w.current.resource_value,50);
+  for(int i=1;i<4;++i) {
+    ++f.tick;++f.pos.y;f.action_tick=f.tick-1;f.moved=true;f.action_error.clear();w.update(f);
+    a=p.decide(w);EXPECT_EQ(a.type,"move");EXPECT_EQ(a.direction,"down")<<i;
+    EXPECT_EQ(p.resource_recovery_evaluation["status"],"continued");
+  }
+  ++f.tick;++f.pos.y;f.action_tick=f.tick-1;f.resource_value=60;f.entities.erase(f.entities.begin()+1);
+  f.completed.insert("normal");w.update(f);p.decide(w);
+  EXPECT_EQ(w.normal_collected,2);EXPECT_EQ(w.current.resource_value,60);
+  EXPECT_EQ(p.resource_recovery_evaluation["status"],"cancelled");
+}
+TEST(Planner, BlockedRecoveryNeedsMatchingContiguousOwnReceipts) {
+  for(int scenario=0;scenario<7;++scenario) {
+    PlannerConfig c;c.resource_blocked_recovery=true;Planner p(2,500,c);World w;auto f=blocked_resource_frame();
+    prime_blocked_resource(w,p,f);
+    if(scenario==0) w.current.action_error.clear();
+    if(scenario==1) w.current.action_error="E_INVALID";
+    if(scenario==2) w.current.action_type="wait";
+    if(scenario==3) --w.current.action_tick;
+    if(scenario==4) ++w.current.tick;
+    if(scenario==5) w.current.moved=true;
+    if(scenario==6) ++w.current.pos.y;
+    p.decide(w);EXPECT_TRUE(p.resource_recovery_evaluation.is_null())<<scenario;
+  }
+}
+TEST(Planner, BlockedRecoveryDoesNotCountSameTickRevisionTwiceAndResetsSession) {
+  PlannerConfig c;c.resource_blocked_recovery=true;Planner p(2,500,c);World w;auto f=blocked_resource_frame();
+  w.update(f);w.normal_collected=1;p.decide(w);blocked_receipt(f);w.update(f);
+  for(int i=0;i<3;++i) {p.decide(w);EXPECT_TRUE(p.resource_recovery_evaluation.is_null());}
+  blocked_receipt(f);w.update(f);p.decide(w);ASSERT_EQ(p.resource_recovery_evaluation["status"],"started");
+  p.reset();p.decide(w);EXPECT_TRUE(p.resource_recovery_evaluation.is_null());
+  f.session="another-match";f.tick=0;w.update(f);p.decide(w);EXPECT_TRUE(p.resource_recovery_evaluation.is_null());
+}
+TEST(Planner, BlockedRecoveryRejectsAbsentStaleOccupiedOrUnwinnableAlternatives) {
+  for(int scenario=0;scenario<6;++scenario) {
+    PlannerConfig c;c.resource_blocked_recovery=true;Planner p(2,500,c);World w;auto f=blocked_resource_frame();
+    prime_blocked_resource(w,p,f);
+    if(scenario==0) w.resources.erase("alternative");
+    if(scenario==1) --w.resources["alternative"].seen;
+    if(scenario==2) w.current.entities.push_back({"robot","D","D",{8,12},100,0,false,true});
+    if(scenario==3) w.current.entities.push_back({"robot","D","D",{12,12},100,0,false,true});
+    if(scenario==4) for(auto q:std::vector<Pos>{{8,11},{7,12},{9,12},{8,13}}) w.obstacles[q]={0,f.tick};
+    if(scenario==5) w.current.entities.erase(w.current.entities.begin()+2,w.current.entities.end());
+    p.decide(w);EXPECT_NE(p.resource_recovery_evaluation.value("status",std::string()),"started")<<scenario;
+  }
+}
+TEST(Planner, BlockedRecoveryPreservesCombatAndEventStageBoundaries) {
+  for(int scenario=0;scenario<6;++scenario) {
+    PlannerConfig c;c.resource_blocked_recovery=true;int stage=scenario==0?1:2;
+    Planner p(stage,500,c);World w;auto f=blocked_resource_frame();
+    if(stage==1) {w.update(f);p.decide(w);blocked_receipt(f);w.update(f);p.decide(w);blocked_receipt(f);w.update(f);}
+    else prime_blocked_resource(w,p,f);
+    if(scenario==1) w.current.tick=100;
+    if(scenario==2) w.events.merge(batch(w.current,Json::array({area("purity",20,30)})),w.current);
+    if(scenario==3) w.current.alive=false;
+    if(scenario==4) w.current.entities[2].hp=10;
+    if(scenario==5) w.current.hp=15; // Defense survives 10 damage; moving would take 20.
+    auto a=p.decide(w);
+    EXPECT_TRUE(p.resource_recovery_evaluation.is_null() || p.resource_recovery_evaluation["status"]!="started")<<scenario;
+    if(scenario==4) {EXPECT_EQ(a.type,"attack");}
+    if(scenario==5) {EXPECT_NE(a.type,"move");}
+  }
+}
+TEST(Planner, BlockedRecoveryCancelsOnNewFailureDisappearanceOrLostRace) {
+  for(int scenario=0;scenario<4;++scenario) {
+    PlannerConfig c;c.resource_blocked_recovery=true;Planner p(2,500,c);World w;auto f=blocked_resource_frame();
+    prime_blocked_resource(w,p,f);p.decide(w);ASSERT_EQ(p.resource_recovery_evaluation["status"],"started");
+    ++f.tick;f.action_tick=f.tick-1;f.moved=scenario!=0;f.action_error=scenario==0?"E_BLOCKED":"";
+    if(f.moved) ++f.pos.y;
+    if(scenario==1) f.entities.erase(f.entities.begin()+1);
+    if(scenario==2) f.entities.push_back({"robot","D","D",{8,13},100,0,false,true});
+    if(scenario==3) {f.tick+=10;f.action_tick=f.tick-1;}
+    w.update(f);p.decide(w);EXPECT_EQ(p.resource_recovery_evaluation["status"],"cancelled")<<scenario;
+  }
 }
 TEST(Planner, CompetitiveExplorationPrefersLessContestedUnknownStripWithoutChangingMemory) {
   auto w=exploration_race_world();

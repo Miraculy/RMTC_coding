@@ -153,6 +153,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--judge-root', type=pathlib.Path, required=True)
     parser.add_argument('--workspace', type=pathlib.Path, default=pathlib.Path(__file__).resolve().parents[1])
+    parser.add_argument('--archive-root', type=pathlib.Path,
+                        help='Optional durable checkpoint directory; run workspace can remain in /tmp')
     parser.add_argument('--binary', type=pathlib.Path)
     parser.add_argument('--label', default='candidate')
     parser.add_argument('--seats', default='A,B,C,D')
@@ -185,7 +187,8 @@ def main():
                       'ai_action_revision', 'revision_window_ms', 'productive_escape', 'validated_enemy_memory', 'event_escape',
                       'use_event_interpretation', 'event_unavoidable_cost', 'frontier_distance_window', 'ray_occlusion',
                       'score_aware_combat', 'damage_reserve', 'fortress_time_budget', 'event_revisions', 'purity_joint_actions',
-                      'opening_route_information'}
+                      'opening_route_information', 'resource_route_pickups', 'resource_race_yield', 'resource_fresh_returns',
+                      'resource_blocked_recovery'}
     if any(p.partition(':=')[0] not in allowed_params or ':=' not in p for p in args.param + args.opponent_param):
         parser.error('--param only accepts the documented planner parameters')
     if args.opponents != 'self' and (args.opponent_param or args.candidate_count != 1):
@@ -201,6 +204,24 @@ def main():
     stamp = str(time.time_ns())
     output = args.workspace / 'test-results' / (args.label + '-' + stamp)
     output.mkdir(parents=True)
+    def checkpoint(complete=False):
+        if args.archive_root is None:
+            return
+        destination = args.archive_root / output.name
+        destination.mkdir(parents=True, exist_ok=True)
+        for source in output.rglob('*'):
+            if not source.is_file():
+                continue
+            relative = source.relative_to(output)
+            # Active judge traces are not required for strict control auditing.
+            # Copy their compressed, closed versions only at successful finish.
+            if relative.parts[0] == 'judge' and source.name.endswith(('.jsonl', '.jsonl.gz')) and not complete:
+                continue
+            target = destination / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        (destination / 'checkpoint.json').write_text(json.dumps(
+            dict(complete=complete, source_workspace=str(output), preserved_at_ns=time.time_ns()), indent=2))
     source_binary = args.binary or args.workspace / 'install/rmtc_bot/lib/rmtc_bot/contestant'
     binary = output / 'contestant'
     shutil.copy2(source_binary, binary)
@@ -526,6 +547,7 @@ def main():
                 results.append(result)
                 (output / 'summary.json').write_text(json.dumps(results, ensure_ascii=False, indent=2))
                 print(json.dumps(result, ensure_ascii=False), flush=True)
+                checkpoint()
                 if any(not c['frames_complete'] or c['own'].get('invalid_actions', 0)
                        or c['rejected_frames'] for c in controllers.values()):
                     raise RuntimeError('Invalid evaluation: missing control frames or illegal actions')
@@ -536,9 +558,11 @@ def main():
             stop(child)
         for stream in streams:
             stream.close()
+        checkpoint()
     # Runs only after successful evaluation and child shutdown. Never compress
     # an active trace, and retain failed-run logs verbatim for diagnosis.
     archived = compress_judge_logs(output / 'judge')
+    checkpoint(complete=True)
     print(json.dumps({'archived_judge_jsonl': archived}), flush=True)
 
 

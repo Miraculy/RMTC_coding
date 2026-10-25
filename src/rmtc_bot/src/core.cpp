@@ -122,6 +122,12 @@ Frame parse_frame(const Json &j) {
     const auto &a=s.at("last_action");
     f.action_tick=integer(a.at("tick"),"last_action.tick",0,1000000);
     f.moved=a.contains("moved") ? boolean(a.at("moved")):false;
+    // Optional diagnostic fields do not make legacy frames invalid. Unknown
+    // or malformed values provide no evidence for the recovery experiment.
+    if(a.contains("action") && a["action"].is_string() && a["action"].get_ref<const std::string&>().size()<=16)
+      f.action_type=a["action"].get<std::string>();
+    if(a.contains("error") && a["error"].is_string() && a["error"].get_ref<const std::string&>().size()<=32)
+      f.action_error=a["error"].get<std::string>();
   }
   const auto &entities=j.at("visible_entities");
   if (!entities.is_array() || entities.size()>4096 || (!f.alive && !entities.empty()))
@@ -425,8 +431,8 @@ Action Planner::decide(const World &observed) {
     without_interpretation=observed;without_interpretation->events.clear();
   }
   const World &w=without_interpretation?*without_interpretation:observed;
-  const auto &f=w.current; reason="wait";goal_reason.clear();purity_evaluations=Json::array();opening_route_evaluation=Json();
-  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();return {};}
+  const auto &f=w.current; reason="wait";goal_reason.clear();purity_evaluations=Json::array();opening_route_evaluation=Json();resource_route_evaluation=Json();resource_race_evaluations=Json::array();resource_recovery_evaluation=Json();
+  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();resource_feedback_={};return {};}
   for(const auto &e:w.events.items) if(e.kind=="world_split" && e.start==f.tick && w.split_line(f.pos,e)) {
     reason="forced_respawn"; return {};
   }
@@ -446,6 +452,31 @@ Action Planner::decide(const World &observed) {
   };
   const bool forecast=config_.tactical_forecast && stage_==2
     && f.tick>=(config_.forecast_start_tick<0?max_ticks_/5:config_.forecast_start_tick);
+  const bool resource_recovery=config_.resource_blocked_recovery && stage_==2 && f.tick<max_ticks_/5
+    && !forecast && !config_.resource_beam && !config_.information_paths
+    && !config_.opening_route_information && !config_.resource_route_pickups
+    && !config_.resource_race_yield && !config_.resource_fresh_returns
+    && w.events.items.empty() && w.events.effects.empty();
+  auto &feedback=resource_feedback_;
+  if(!resource_recovery) feedback={};
+  else {
+    if(feedback.session!=f.session || f.tick<feedback.processed_tick) feedback={};
+    feedback.session=f.session;
+    if(feedback.processed_tick!=f.tick) {
+      const bool contiguous=feedback.proposed_tick==f.tick-1 && f.action_tick==f.tick-1;
+      const bool failed=contiguous && feedback.action.type=="move" && f.action_type=="move"
+        && !f.moved && f.action_error=="E_BLOCKED" && f.pos==feedback.from && feedback.proposed_entry;
+      if(failed) {
+        feedback.failures=feedback.failed_entry==feedback.proposed_entry?feedback.failures+1:1;
+        feedback.failed_entry=feedback.proposed_entry;
+      } else {feedback.failures=0;feedback.failed_entry.reset();}
+      if(feedback.alternative && (!contiguous || (feedback.action.type=="move" && !f.moved))) {
+        resource_recovery_evaluation={{"status","cancelled"},{"cause","route_receipt"}};
+        feedback.alternative.reset();feedback.blocked_entry.reset();
+      }
+      feedback.processed_tick=f.tick;
+    }
+  }
   const int size=f.width*f.height, root=f.pos.y*f.width+f.pos.x;
   std::vector<double> escape_damage;
   if(stage_==2 && config_.event_escape) {
@@ -740,7 +771,14 @@ Action Planner::decide(const World &observed) {
     // soft geometric prior, never a claim about unseen opponents or resources.
     double return_priority=1;
     if(stage_==2 && w.spawn && f.tick<max_ticks_/5 && w.explored.size()<static_cast<size_t>(size*.75)
-      && distance(*w.spawn,r.pos)+3<distance(*w.spawn,f.pos)) return_priority=.6;
+      && distance(*w.spawn,r.pos)+3<distance(*w.spawn,f.pos)) {
+      // A fresh, visible resource has evidence of continued availability.
+      // Compare its full ordinary score and route cost before choosing an
+      // unknown frontier. This never assumes the way back is safe or empty.
+      const bool fresh_return=config_.resource_fresh_returns && f.tick<std::min(40,max_ticks_/5)
+        && r.seen==f.tick && !forecast && w.events.items.empty() && w.events.effects.empty();
+      return_priority=fresh_return?1:.6;
+    }
     // Estimate competition only from legitimately observed enemy positions.
     double competition=1;
     for(const auto &[team,record]:w.enemies) {
@@ -752,6 +790,32 @@ Action Planner::decide(const World &observed) {
     }
     if(stage_==2 && config_.race_aware_resources)
       competition=capture_probability(r.pos,steps[r.pos.y*f.width+r.pos.x]);
+    if(config_.resource_race_yield && stage_==2 && f.tick<std::min(40,max_ticks_/5)
+      && !forecast && !config_.race_aware_resources && w.events.items.empty() && w.events.effects.empty()
+      && r.seen==f.tick && distance(f.pos,r.pos)>=2 && !w.blocked(r.pos,f.tick) && !w.occupied(r.pos)) {
+      const auto *previous=w.at(f.tick-1);
+      if(previous && previous->alive) for(const auto &enemy:f.entities)
+        if(enemy.type=="robot" && enemy.hp>0 && distance(enemy.pos,r.pos)==1) {
+          auto before=std::find_if(previous->entities.begin(),previous->entities.end(),[&](const auto &old) {
+            return old.type=="robot" && old.team==enemy.team && old.hp>0;
+          });
+          if(before==previous->entities.end() || distance(before->pos,enemy.pos)!=1
+            || distance(before->pos,r.pos)!=2) continue;
+          // Preserve a possible immediate kill that can cancel their move.
+          if(!f.protected_spawn && !enemy.protected_spawn && enemy.hp<=20
+            && normal_ray_clear(f.pos,enemy.pos,f.team,f.entities)) continue;
+          const double prior=competition;
+          // They may stop, attack, or change direction: retain value, rather
+          // than deleting the resource or writing a guessed pickup to World.
+          competition=std::min(competition,.1);
+          resource_race_evaluations.push_back({{"resource",{r.pos.x,r.pos.y}},{"value",r.value},
+            {"enemy",enemy.team},{"enemy_before",{before->pos.x,before->pos.y}},
+            {"enemy_now",{enemy.pos.x,enemy.pos.y}},{"enemy_arrival_lower_bound",1},
+            {"own_arrival_lower_bound",distance(f.pos,r.pos)},
+            {"previous_discount",prior},{"approach_discount",competition}});
+          break;
+        }
+    }
     double probability=confidence*competition*return_priority;
     double expected=std::max(.1,reward)*probability;
     offer(r.pos,expected,"resource");
@@ -1111,6 +1175,94 @@ Action Planner::decide(const World &observed) {
   target_=goal;target_type_=goal_type;goal_reason=goal?goal_type:"";int preferred=-1;
   if(goal) preferred=first[goal->y*f.width+goal->x];
   if(searched_first) preferred=*searched_first;
+  if(config_.resource_route_pickups && stage_==2 && f.tick<std::min(40,max_ticks_/5)
+    && !forecast && !config_.information_paths && !config_.resource_beam && !config_.opening_route_information
+    && w.events.items.empty() && w.events.effects.empty()
+    && goal && goal_type=="resource" && preferred>=0) {
+    // Preserve the selected goal. The reverse search
+    // uses the same static edge costs as the forward no-event search. Unlike
+    // an information bonus, an incidental pickup must be an observed resource.
+    const int destination=goal->y*f.width+goal->x;
+    auto exposure=[&](Pos p) {
+      double result=0;
+      for(const auto &enemy:f.entities) if(enemy.type=="robot" && !enemy.protected_spawn
+        && aligned(p,enemy.pos)) result+=.6;
+      return result;
+    };
+    auto edge_cost=[&](Pos p) {
+      return 1+(w.explored.count(p)?0:.35)+(w.occupied(p)?1.0:0.0)+exposure(p);
+    };
+    auto earliest_rival=[&](Pos p) {
+      // A hidden car can start in any map cell outside the current square
+      // view. Minimize Manhattan distance to that set without assuming its
+      // actual position or using obstacles to inflate the lower bound. This
+      // covers movement of living cars, not an unobserved future respawn.
+      int earliest=f.width+f.height;
+      if(f.pos.x-f.radius>0) earliest=std::min(earliest,p.x-(f.pos.x-f.radius-1));
+      if(f.pos.x+f.radius+1<f.width) earliest=std::min(earliest,f.pos.x+f.radius+1-p.x);
+      if(f.pos.y-f.radius>0) earliest=std::min(earliest,p.y-(f.pos.y-f.radius-1));
+      if(f.pos.y+f.radius+1<f.height) earliest=std::min(earliest,f.pos.y+f.radius+1-p.y);
+      for(const auto &enemy:f.entities) if(enemy.type=="robot" && enemy.hp>0)
+        earliest=std::min(earliest,distance(enemy.pos,p));
+      return earliest;
+    };
+    std::vector<double> remaining(size,inf);std::vector<int> remaining_steps(size,0);
+    std::priority_queue<Entry,std::vector<Entry>,std::greater<Entry>> reverse_queue;
+    remaining[destination]=0;reverse_queue.push({0,destination});
+    while(!reverse_queue.empty()) {
+      auto [cost,index]=reverse_queue.top();reverse_queue.pop();
+      if(cost>remaining[index]+1e-6) continue;
+      Pos q{index%f.width,index/f.width};
+      for(auto step:delta) {
+        Pos p=add(q,step);if(w.blocked(p,f.tick)) continue;
+        int before=p.y*f.width+p.x;double next=cost+edge_cost(q);
+        if(next+1e-6<remaining[before]
+          || (std::abs(next-remaining[before])<1e-6 && remaining_steps[before]>remaining_steps[index]+1)) {
+          remaining[before]=next;remaining_steps[before]=remaining_steps[index]+1;
+          reverse_queue.push({next,before});
+        }
+      }
+    }
+    const Resource *pickup=nullptr;double best_pickup=0;
+    const int baseline_first=preferred;
+    for(const auto &[id,r]:w.resources) {
+      (void)id;int i=r.pos.y*f.width+r.pos.x,arrival=steps[i];
+      const double via_cost=costs[i]+remaining[i];
+      const int via_steps=arrival+remaining_steps[i],extra_steps=via_steps-steps[destination];
+      if(r.seen!=f.tick || r.pos==*goal || r.pos==f.pos || first[i]<0 || first[i]==baseline_first
+        || !std::isfinite(costs[i]) || !std::isfinite(remaining[i]) || arrival<=0
+        || extra_steps<0 || extra_steps>2 || via_cost>costs[destination]+extra_steps+1e-6) continue;
+      // Cover every position from which a hidden rival could arrive no later
+      // than this pickup. Manhattan lower bounds ignore walls conservatively.
+      // This is a local race check, never knowledge of another car's intention.
+      if(arrival>=earliest_rival(r.pos)) continue;
+      if(extra_steps>0) {
+        bool fresh_goal=std::any_of(w.resources.begin(),w.resources.end(),[&](const auto &other) {
+          return other.second.pos==*goal && other.second.seen==f.tick;
+        });
+        // A detour must still beat this movement bound at the ORIGINAL goal;
+        // equal-cost insertion needs no additional deadline allowance there.
+        if(!fresh_goal || via_steps>=earliest_rival(*goal)) continue;
+      }
+      if(exposure(add(f.pos,delta[first[i]]))>exposure(add(f.pos,delta[baseline_first]))+1e-9) continue;
+      double value=.25*std::min(r.value,std::max(0.0,120-f.resource_value))+task_reward(r.value,0,0,0);
+      if(value<=0) continue;
+      if(value>best_pickup+1e-9 || (pickup && std::abs(value-best_pickup)<1e-9
+        && std::make_pair(arrival,r.pos)<std::make_pair(steps[pickup->pos.y*f.width+pickup->pos.x],pickup->pos))) {
+        pickup=&r;best_pickup=value;
+      }
+    }
+    if(pickup) {
+      int i=pickup->pos.y*f.width+pickup->pos.x;preferred=first[i];
+      resource_route_evaluation={{"target",{goal->x,goal->y}},{"pickup",{pickup->pos.x,pickup->pos.y}},
+        {"pickup_value",pickup->value},{"pickup_points",best_pickup},{"pickup_arrival_steps",steps[i]},
+        {"cost",costs[destination]},{"via_cost",costs[i]+remaining[i]},
+        {"steps",steps[destination]},{"via_steps",steps[i]+remaining_steps[i]},
+        {"pickup_rival_movement_lower_bound",earliest_rival(pickup->pos)},
+        {"goal_rival_movement_lower_bound",earliest_rival(*goal)},
+        {"baseline_first",dirs[baseline_first]},{"proposed_first",dirs[preferred]}};
+    }
+  }
   if(opening_information && !searched_first && goal && goal_type=="resource" && preferred>=0
     && std::any_of(w.resources.begin(),w.resources.end(),[&](const auto &r) {
       return r.second.pos==*goal && r.second.value<20;
@@ -1297,7 +1449,7 @@ Action Planner::decide(const World &observed) {
     }
   }
   bool available_finisher=false;
-  if((config_.productive_escape || config_.safe_progress_moves) && !f.protected_spawn) for(const auto &enemy:f.entities)
+  if((config_.productive_escape || config_.safe_progress_moves || resource_recovery) && !f.protected_spawn) for(const auto &enemy:f.entities)
     if(enemy.type=="robot" && !enemy.protected_spawn) {
       int radius=static_cast<int>(w.effect_number("unrivaled",f.team,f.tick,"attack_radius",2));
       bool reachable=self_unrivaled?std::max(std::abs(enemy.pos.x-f.pos.x),std::abs(enemy.pos.y-f.pos.y))<=radius
@@ -1306,6 +1458,73 @@ Action Planner::decide(const World &observed) {
       if(w.effect("pan",enemy.team,f.tick))damage*=w.effect_number("pan",enemy.team,f.tick,"damage_multiplier",2);
       if(reachable && damage>=enemy.hp)available_finisher=true;
     }
+  if(resource_recovery && (feedback.alternative || feedback.failures>=2)) {
+    auto fresh=[&](Pos p) {
+      return std::any_of(w.resources.begin(),w.resources.end(),[&](const auto &r) {
+        return r.second.pos==p && r.second.seen==f.tick;
+      });
+    };
+    const bool continuing=feedback.alternative.has_value();
+    std::optional<Pos> blocked=continuing?feedback.blocked_entry:feedback.failed_entry;
+    bool contention=blocked && fresh(*blocked) && !w.blocked(*blocked,f.tick) && !w.occupied(*blocked)
+      && std::any_of(f.entities.begin(),f.entities.end(),[&](const auto &e) {
+        return e.type=="robot" && e.hp>0 && distance(e.pos,*blocked)==1;
+      });
+    bool eligible=hp>incoming*vulnerable && !available_finisher && f.resource_value<120
+      && (continuing || (contention && goal==blocked && goal_type=="resource"));
+    std::vector<int> length(size,-1),route_first(size,-1),frontier(size);
+    if(eligible) {
+      // Only currently visible, empty, traversable cells form this bounded
+      // alternative. The failed resource is still a resource, not a wall fact.
+      int read=0,write=0;length[root]=0;frontier[write++]=root;
+      while(read<write) {
+        int index=frontier[read++];Pos p{index%f.width,index/f.width};
+        if(length[index]>=2*f.radius) continue;
+        for(int d=0;d<4;++d) {
+          Pos q=add(p,delta[d]);
+          if(!w.visible(q) || w.blocked(q,f.tick) || w.occupied(q) || (blocked && q==*blocked)) continue;
+          int next=q.y*f.width+q.x;if(length[next]>=0) continue;
+          length[next]=length[index]+1;route_first[next]=index==root?d:route_first[index];frontier[write++]=next;
+        }
+      }
+    }
+    std::optional<Pos> alternative;double rate=-1;int travel=0,rival_bound=0,direction=-1;
+    for(const auto &[id,r]:w.resources) {
+      (void)id;
+      if(!eligible || r.seen!=f.tick || (blocked && r.pos==*blocked)
+        || (continuing && r.pos!=*feedback.alternative)) continue;
+      int index=r.pos.y*f.width+r.pos.x,n=length[index];
+      if(n<=0 || f.tick+n>max_ticks_/5 || (continuing && f.tick+n>feedback.deadline)) continue;
+      int rival=std::numeric_limits<int>::max();
+      for(const auto &e:f.entities) if(e.type=="robot" && e.hp>0) rival=std::min(rival,distance(e.pos,r.pos));
+      if(n>=rival) continue; // A visible lead only; hidden cars and future revivals remain unknown.
+      int d=route_first[index];Pos next=add(f.pos,delta[d]);
+      auto fire=[&](Pos p) {
+        int count=0;
+        for(const auto &e:f.entities) if(e.type=="robot" && !e.protected_spawn && aligned(e.pos,p)) ++count;
+        return count;
+      };
+      if(fire(next)>fire(f.pos)) continue;
+      double reward=std::min(r.value,120-f.resource_value)*.25+task_reward(r.value,0,0,0);
+      double value=reward/std::pow(n+1,.85);
+      if(value>rate) {rate=value;alternative=r.pos;travel=n;rival_bound=rival;direction=d;}
+    }
+    if(alternative) {
+      if(!continuing) feedback.deadline=f.tick+travel+2;
+      feedback.alternative=alternative;feedback.blocked_entry=blocked;
+      resource_recovery_evaluation={{"status",continuing?"continued":"started"},
+        {"blocked_entry",{blocked->x,blocked->y}},{"alternative",{alternative->x,alternative->y}},
+        {"failed_receipts",feedback.failures},{"steps",travel},{"deadline",feedback.deadline},
+        {"visible_rival_distance",rival_bound==std::numeric_limits<int>::max()?Json():Json(rival_bound)},
+        {"hidden_rivals_known",false},{"proposed_first",dirs[direction]},{"value_per_cost",rate}};
+      goal=alternative;goal_type="resource";best_goal=rate;preferred=direction;
+      target_=goal;target_type_=goal_type;goal_reason=goal_type;
+    } else {
+      resource_recovery_evaluation={{"status",continuing?"cancelled":"no_alternative"},
+        {"cause","availability_race_safety_or_deadline"},{"failed_receipts",feedback.failures}};
+      feedback.alternative.reset();feedback.blocked_entry.reset();
+    }
+  }
   if(config_.safe_progress_moves && stage_==2 && f.tick>=max_ticks_/5 && f.tick+1<max_ticks_
     && f.radius>=4 && !f.protected_spawn && !available_finisher && !searched_first && goal && preferred>=0
     && (goal_type=="resource" || goal_type=="explore" || goal_type=="mission")
@@ -1708,6 +1927,13 @@ Action Planner::decide(const World &observed) {
   reason=goal_type;
   if(best.type=="attack" || best.type=="defend") reason="combat";
   if(!legal(best,f,stage_)) return {};
+  if(resource_recovery) {
+    feedback.proposed_tick=f.tick;feedback.from=f.pos;feedback.action=best;feedback.proposed_entry.reset();
+    if(best.type=="move" && goal && goal_type=="resource" && distance(f.pos,*goal)==1) {
+      int d=std::find(dirs.begin(),dirs.end(),best.direction)-dirs.begin();
+      if(add(f.pos,delta[d])==*goal) feedback.proposed_entry=goal;
+    }
+  }
   return best;
 }
 } // namespace rmtc

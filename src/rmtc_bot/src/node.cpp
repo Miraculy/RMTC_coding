@@ -40,6 +40,10 @@ public:
     planner_config.competitive_exploration=declare_parameter<bool>("competitive_exploration",false);
     planner_config.finish_early_exploration=declare_parameter<bool>("finish_early_exploration",false);
     planner_config.opening_route_information=declare_parameter<bool>("opening_route_information",false);
+    planner_config.resource_route_pickups=declare_parameter<bool>("resource_route_pickups",false);
+    planner_config.resource_race_yield=declare_parameter<bool>("resource_race_yield",false);
+    planner_config.resource_fresh_returns=declare_parameter<bool>("resource_fresh_returns",false);
+    planner_config.resource_blocked_recovery=declare_parameter<bool>("resource_blocked_recovery",false);
     planner_config.survival_conditioned_progress=declare_parameter<bool>("survival_conditioned_progress",false);
     planner_config.respawn_task_route=declare_parameter<bool>("respawn_task_route",false);
     planner_config.safe_progress_moves=declare_parameter<bool>("safe_progress_moves",false);
@@ -138,6 +142,12 @@ private:
       {"revision",true},{"selected",action.json(f)},{"candidates",planner_->purity_evaluations}});
     if(!planner_->opening_route_evaluation.is_null()) record({{"kind","opening_route_evaluation"},{"tick",f.tick},
       {"revision",true},{"selected",action.json(f)},{"estimate",planner_->opening_route_evaluation}});
+    if(!planner_->resource_route_evaluation.is_null()) record({{"kind","resource_route_evaluation"},{"tick",f.tick},
+      {"revision",true},{"selected",action.json(f)},{"estimate",planner_->resource_route_evaluation}});
+    if(!planner_->resource_race_evaluations.empty()) record({{"kind","resource_race_evaluation"},{"tick",f.tick},
+      {"revision",true},{"selected",action.json(f)},{"estimates",planner_->resource_race_evaluations}});
+    if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
+      {"revision",true},{"selected",action.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
   }
   void collect_ai(bool allow_revision=true) {
     if(!ai_)return;
@@ -245,6 +255,12 @@ private:
         {"selected",a.json(f)},{"candidates",planner_->purity_evaluations}});
       if(!planner_->opening_route_evaluation.is_null()) record({{"kind","opening_route_evaluation"},{"tick",f.tick},
         {"selected",a.json(f)},{"estimate",planner_->opening_route_evaluation}});
+      if(!planner_->resource_route_evaluation.is_null()) record({{"kind","resource_route_evaluation"},{"tick",f.tick},
+        {"selected",a.json(f)},{"estimate",planner_->resource_route_evaluation}});
+      if(!planner_->resource_race_evaluations.empty()) record({{"kind","resource_race_evaluation"},{"tick",f.tick},
+        {"selected",a.json(f)},{"estimates",planner_->resource_race_evaluations}});
+      if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
+        {"selected",a.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},
         {"hp",f.hp},{"alive",f.alive},{"protected",f.protected_spawn},
         {"public_missions",f.missions},{"initial_spawn",world_.spawn?Json::array({world_.spawn->x,world_.spawn->y}):Json()},

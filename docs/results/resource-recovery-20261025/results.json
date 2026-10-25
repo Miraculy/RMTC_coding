@@ -1,0 +1,1066 @@
+{
+  "binary_sha256": "17af71e3389cbdb6478a959e391b0aa462d04fbcc5341846e1d8885c1cea4a8c",
+  "default_enabled": false,
+  "conclusion": "Localized benefit only; broad resource improvement not established.",
+  "comparisons": {
+    "audit.json": {
+      "note": "Practice scores only. One game with four cars is one game; do not pool private observations.",
+      "pairs": 16,
+      "controlled_car_decisions": [
+        32000,
+        32000
+      ],
+      "receipt_tick_mismatches": [
+        0,
+        0
+      ],
+      "receipt_action_mismatches": [
+        0,
+        0
+      ],
+      "missing_receipts": [
+        0,
+        0
+      ],
+      "strict_first": [
+        4,
+        5
+      ],
+      "mean_score": [
+        36.79375,
+        37.60625
+      ],
+      "mean_resource": [
+        50.0,
+        51.25
+      ],
+      "mean_rank": [
+        2.5,
+        2.3125
+      ],
+      "score_improvements": 1,
+      "score_regressions": 0,
+      "rank_regressions": 0,
+      "changed": [
+        {
+          "case": [
+            "map24102425",
+            "C",
+            1
+          ],
+          "score": [
+            34.5,
+            47.5
+          ],
+          "resources": [
+            50.0,
+            70.0
+          ],
+          "missions": [
+            2,
+            3
+          ],
+          "damage": [
+            400.0,
+            1110.0
+          ],
+          "rank": [
+            4,
+            1
+          ],
+          "first": [
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    "defensive-audit.json": {
+      "note": "Practice scores only. One game with four cars is one game; do not pool private observations.",
+      "pairs": 4,
+      "controlled_car_decisions": [
+        8000,
+        8000
+      ],
+      "receipt_tick_mismatches": [
+        0,
+        0
+      ],
+      "receipt_action_mismatches": [
+        0,
+        0
+      ],
+      "missing_receipts": [
+        0,
+        0
+      ],
+      "strict_first": [
+        0,
+        1
+      ],
+      "mean_score": [
+        34.6,
+        37.1
+      ],
+      "mean_resource": [
+        55.0,
+        60.0
+      ],
+      "mean_rank": [
+        2.5,
+        2.25
+      ],
+      "score_improvements": 1,
+      "score_regressions": 0,
+      "rank_regressions": 0,
+      "changed": [
+        {
+          "case": [
+            "map24102425",
+            "C",
+            1
+          ],
+          "score": [
+            37.5,
+            47.5
+          ],
+          "resources": [
+            50.0,
+            70.0
+          ],
+          "missions": [
+            2,
+            3
+          ],
+          "damage": [
+            630.0,
+            740.0
+          ],
+          "rank": [
+            2,
+            1
+          ],
+          "first": [
+            false,
+            true
+          ]
+        }
+      ]
+    },
+    "reference-audit.json": {
+      "note": "Practice scores only. One game with four cars is one game; do not pool private observations.",
+      "pairs": 4,
+      "controlled_car_decisions": [
+        2000,
+        2000
+      ],
+      "receipt_tick_mismatches": [
+        0,
+        0
+      ],
+      "receipt_action_mismatches": [
+        0,
+        0
+      ],
+      "missing_receipts": [
+        0,
+        0
+      ],
+      "strict_first": [
+        3,
+        3
+      ],
+      "mean_score": [
+        46.25,
+        46.25
+      ],
+      "mean_resource": [
+        65.0,
+        65.0
+      ],
+      "mean_rank": [
+        1.25,
+        1.25
+      ],
+      "score_improvements": 0,
+      "score_regressions": 0,
+      "rank_regressions": 0,
+      "changed": []
+    }
+  },
+  "recovery_triggers": {
+    "audit.json": [
+      {
+        "case": [
+          "map24102425",
+          "C",
+          1
+        ],
+        "starts": [
+          {
+            "tick": 25,
+            "estimate": {
+              "alternative": [
+                7,
+                14
+              ],
+              "blocked_entry": [
+                8,
+                10
+              ],
+              "deadline": 31,
+              "failed_receipts": 2,
+              "hidden_rivals_known": false,
+              "proposed_first": "down",
+              "status": "started",
+              "steps": 4,
+              "value_per_cost": 1.9095751733196356,
+              "visible_rival_distance": 6
+            },
+            "action": {
+              "action": "move",
+              "direction": "down",
+              "session_id": "practice-2e8bdf76c8e947abb07e2661c456fc22",
+              "tick": 25
+            },
+            "confirmed_pickup_ticks": [
+              29
+            ],
+            "resource_value": 10.0
+          }
+        ],
+        "continued": 3,
+        "cancelled": 1
+      }
+    ],
+    "defensive-audit.json": [
+      {
+        "case": [
+          "map24102425",
+          "C",
+          1
+        ],
+        "starts": [
+          {
+            "tick": 25,
+            "estimate": {
+              "alternative": [
+                7,
+                14
+              ],
+              "blocked_entry": [
+                8,
+                10
+              ],
+              "deadline": 31,
+              "failed_receipts": 2,
+              "hidden_rivals_known": false,
+              "proposed_first": "down",
+              "status": "started",
+              "steps": 4,
+              "value_per_cost": 1.9095751733196356,
+              "visible_rival_distance": 6
+            },
+            "action": {
+              "action": "move",
+              "direction": "down",
+              "session_id": "practice-e85007f698c84b318d7a1ccc65705813",
+              "tick": 25
+            },
+            "confirmed_pickup_ticks": [
+              29
+            ],
+            "resource_value": 10.0
+          }
+        ],
+        "continued": 3,
+        "cancelled": 1
+      }
+    ],
+    "reference-audit.json": []
+  },
+  "resource_metrics": {
+    "audit.json": {
+      "control": {
+        "cases": 16,
+        "mean_resource_score": 12.5,
+        "full_resource_count": 0,
+        "top2_count": 8,
+        "details": [
+          {
+            "case": [
+              "interior24102424",
+              "A",
+              1
+            ],
+            "resource_score": 20.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102424",
+              "B",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102424",
+              "C",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102424",
+              "D",
+              1
+            ],
+            "resource_score": 7.5,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102502",
+              "A",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102502",
+              "B",
+              1
+            ],
+            "resource_score": 5.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102502",
+              "C",
+              1
+            ],
+            "resource_score": 20.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102502",
+              "D",
+              1
+            ],
+            "resource_score": 15.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "A",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "B",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102425",
+              "C",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102425",
+              "D",
+              1
+            ],
+            "resource_score": 15.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "A",
+              1
+            ],
+            "resource_score": 15.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "B",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102501",
+              "D",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": false
+          }
+        ]
+      },
+      "candidate": {
+        "cases": 16,
+        "mean_resource_score": 12.8125,
+        "full_resource_count": 0,
+        "top2_count": 9,
+        "details": [
+          {
+            "case": [
+              "interior24102424",
+              "A",
+              1
+            ],
+            "resource_score": 20.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102424",
+              "B",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102424",
+              "C",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102424",
+              "D",
+              1
+            ],
+            "resource_score": 7.5,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102502",
+              "A",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102502",
+              "B",
+              1
+            ],
+            "resource_score": 5.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102502",
+              "C",
+              1
+            ],
+            "resource_score": 20.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "interior24102502",
+              "D",
+              1
+            ],
+            "resource_score": 15.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "A",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "B",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102425",
+              "C",
+              1
+            ],
+            "resource_score": 17.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "D",
+              1
+            ],
+            "resource_score": 15.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "A",
+              1
+            ],
+            "resource_score": 15.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "B",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102501",
+              "D",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": false
+          }
+        ]
+      }
+    },
+    "defensive-audit.json": {
+      "control": {
+        "cases": 4,
+        "mean_resource_score": 13.75,
+        "full_resource_count": 0,
+        "top2_count": 2,
+        "details": [
+          {
+            "case": [
+              "interior24102424",
+              "C",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102502",
+              "C",
+              1
+            ],
+            "resource_score": 20.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102425",
+              "C",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": false
+          }
+        ]
+      },
+      "candidate": {
+        "cases": 4,
+        "mean_resource_score": 15.0,
+        "full_resource_count": 0,
+        "top2_count": 2,
+        "details": [
+          {
+            "case": [
+              "interior24102424",
+              "C",
+              1
+            ],
+            "resource_score": 12.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102502",
+              "C",
+              1
+            ],
+            "resource_score": 20.0,
+            "time_to_120": null,
+            "top2": false
+          },
+          {
+            "case": [
+              "map24102425",
+              "C",
+              1
+            ],
+            "resource_score": 17.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": false
+          }
+        ]
+      }
+    },
+    "reference-audit.json": {
+      "control": {
+        "cases": 4,
+        "mean_resource_score": 16.25,
+        "full_resource_count": 0,
+        "top2_count": 4,
+        "details": [
+          {
+            "case": [
+              "interior24102424",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102502",
+              "C",
+              1
+            ],
+            "resource_score": 27.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "C",
+              1
+            ],
+            "resource_score": 17.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          }
+        ]
+      },
+      "candidate": {
+        "cases": 4,
+        "mean_resource_score": 16.25,
+        "full_resource_count": 0,
+        "top2_count": 4,
+        "details": [
+          {
+            "case": [
+              "interior24102424",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "interior24102502",
+              "C",
+              1
+            ],
+            "resource_score": 27.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102425",
+              "C",
+              1
+            ],
+            "resource_score": 17.5,
+            "time_to_120": null,
+            "top2": true
+          },
+          {
+            "case": [
+              "map24102501",
+              "C",
+              1
+            ],
+            "resource_score": 10.0,
+            "time_to_120": null,
+            "top2": true
+          }
+        ]
+      }
+    }
+  },
+  "default_regression": {
+    "old_binary": "852458b9f5972a4f8b3b278b5fbeb15d2dd6b1bdb3bf7e9ab88a79132d6a4ea4",
+    "new_binary": "17af71e3389cbdb6478a959e391b0aa462d04fbcc5341846e1d8885c1cea4a8c",
+    "excluded_fields": [
+      "session_id",
+      "latency_ms",
+      "wall_ms"
+    ],
+    "equal_car_decisions": 4000,
+    "control": {
+      "matches": 2,
+      "decisions": 4000,
+      "receipts": 4000,
+      "successful_moves": 1453,
+      "proposals": 0,
+      "followed_proposals": 0,
+      "race_discount_ticks": 0,
+      "race_discount_records": 0,
+      "details": [
+        {
+          "case": [
+            "map24102425",
+            "C",
+            1
+          ],
+          "resource_at": {
+            "10": 30.0,
+            "20": 50.0,
+            "40": 50.0,
+            "60": 50.0
+          },
+          "proposals": 0,
+          "followed": 0,
+          "race_discount_ticks": 0,
+          "score": 34.5,
+          "resources": 50.0,
+          "rank": 4
+        },
+        {
+          "case": [
+            "interior24102502",
+            "C",
+            1
+          ],
+          "resource_at": {
+            "10": 70.0,
+            "20": 70.0,
+            "40": 70.0,
+            "60": 70.0
+          },
+          "proposals": 0,
+          "followed": 0,
+          "race_discount_ticks": 0,
+          "score": 37.8,
+          "resources": 80.0,
+          "rank": 3
+        }
+      ],
+      "resource_at_mean": {
+        "10": 50.0,
+        "20": 60.0,
+        "40": 60.0,
+        "60": 60.0
+      }
+    },
+    "candidate": {
+      "matches": 2,
+      "decisions": 4000,
+      "receipts": 4000,
+      "successful_moves": 1453,
+      "proposals": 0,
+      "followed_proposals": 0,
+      "race_discount_ticks": 0,
+      "race_discount_records": 0,
+      "details": [
+        {
+          "case": [
+            "map24102425",
+            "C",
+            1
+          ],
+          "resource_at": {
+            "10": 30.0,
+            "20": 50.0,
+            "40": 50.0,
+            "60": 50.0
+          },
+          "proposals": 0,
+          "followed": 0,
+          "race_discount_ticks": 0,
+          "score": 34.5,
+          "resources": 50.0,
+          "rank": 4
+        },
+        {
+          "case": [
+            "interior24102502",
+            "C",
+            1
+          ],
+          "resource_at": {
+            "10": 70.0,
+            "20": 70.0,
+            "40": 70.0,
+            "60": 70.0
+          },
+          "proposals": 0,
+          "followed": 0,
+          "race_discount_ticks": 0,
+          "score": 37.8,
+          "resources": 80.0,
+          "rank": 3
+        }
+      ],
+      "resource_at_mean": {
+        "10": 50.0,
+        "20": 60.0,
+        "40": 60.0,
+        "60": 60.0
+      }
+    }
+  },
+  "round_audit": {
+    "batches": 10,
+    "matches": 53,
+    "decisions": 92500,
+    "receipts": 92500,
+    "interfaces": 44,
+    "max_p95_ms": 4.404819,
+    "max_ms": 12.128754,
+    "preflight_failure_batches": 2,
+    "historical_lost_tmp_included": false,
+    "excluded_failed_batches": [
+      "recovery-reference-candidate-1792895536921940225"
+    ],
+    "selected_comparison_pairs": 24,
+    "details": [
+      {
+        "batch": "recovery-candidate-1792894241119987996",
+        "matches": 16,
+        "decisions": 32000,
+        "receipts": 32000,
+        "interfaces": 16,
+        "max_p95_ms": 4.226418,
+        "max_ms": 9.111034
+      },
+      {
+        "batch": "recovery-control-1792894238447294187",
+        "matches": 16,
+        "decisions": 32000,
+        "receipts": 32000,
+        "interfaces": 16,
+        "max_p95_ms": 4.073493,
+        "max_ms": 7.335358
+      },
+      {
+        "batch": "recovery-default-candidate-1792913431580468607",
+        "matches": 2,
+        "decisions": 4000,
+        "receipts": 4000,
+        "interfaces": 2,
+        "max_p95_ms": 2.93436,
+        "max_ms": 12.128754
+      },
+      {
+        "batch": "recovery-default-control-1792895752617181757",
+        "matches": 2,
+        "decisions": 4000,
+        "receipts": 4000,
+        "interfaces": 2,
+        "max_p95_ms": 2.570731,
+        "max_ms": 4.513484
+      },
+      {
+        "batch": "recovery-defensive-candidate-1792895310317890644",
+        "matches": 4,
+        "decisions": 8000,
+        "receipts": 8000,
+        "interfaces": 4,
+        "max_p95_ms": 4.025072,
+        "max_ms": 6.666381
+      },
+      {
+        "batch": "recovery-defensive-control-1792895308121113604",
+        "matches": 4,
+        "decisions": 8000,
+        "receipts": 8000,
+        "interfaces": 4,
+        "max_p95_ms": 4.404819,
+        "max_ms": 7.37467
+      },
+      {
+        "batch": "recovery-reference-control-1792895536429705704",
+        "matches": 4,
+        "decisions": 2000,
+        "receipts": 2000,
+        "interfaces": 0,
+        "max_p95_ms": 2.562196,
+        "max_ms": 6.425458
+      },
+      {
+        "batch": "recovery-reference-other-candidate-1792913432635370085",
+        "matches": 3,
+        "decisions": 1500,
+        "receipts": 1500,
+        "interfaces": 0,
+        "max_p95_ms": 2.989916,
+        "max_ms": 8.864649
+      },
+      {
+        "batch": "recovery-reference-repair-candidate-1792913177495183911",
+        "matches": 1,
+        "decisions": 500,
+        "receipts": 500,
+        "interfaces": 0,
+        "max_p95_ms": 2.195604,
+        "max_ms": 3.75528
+      },
+      {
+        "batch": "recovery-reference-repair-control-1792913175844428719",
+        "matches": 1,
+        "decisions": 500,
+        "receipts": 500,
+        "interfaces": 0,
+        "max_p95_ms": 2.248803,
+        "max_ms": 3.84791
+      }
+    ]
+  },
+  "excluded_failed_run": [
+    {
+      "batch": "recovery-reference-candidate-1792895536921940225",
+      "case": [
+        "map24102425",
+        "C"
+      ],
+      "missing_ticks": [
+        16
+      ],
+      "decisions": 499,
+      "recovery_diagnostics": 0
+    }
+  ],
+  "full_archive": {
+    "local_path": "test-results/resource-recovery-20261025.tar.gz",
+    "sha256": "b92bd5c0de5146181a90a54df4c5e9e7352088ac790b8a7f50820d05d29f4675",
+    "tracked_in_git": false
+  }
+}
