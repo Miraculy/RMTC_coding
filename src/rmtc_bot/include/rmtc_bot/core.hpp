@@ -1,6 +1,7 @@
 #pragma once
 #include <nlohmann/json.hpp>
 #include <array>
+#include <cstdint>
 #include <deque>
 #include <exception>
 #include <map>
@@ -35,7 +36,6 @@ struct Frame {
   double hp{}, resource_value{}, effective_damage{};
   bool alive{}, protected_spawn{}, moved{};
   int action_tick{-1};
-  std::string action_type, action_error; // Own receipt only; a failed move has no implied destination.
   Json missions = Json::array();
   std::set<std::string> completed;
   std::vector<Entity> entities;
@@ -110,6 +110,9 @@ public:
   std::optional<Pos> spawn;
 };
 struct PlannerConfig {
+  bool stage1_subgoal_risk{false}; // Legal-view contingent subgoal evaluation.
+  bool stage1_joint_coverage{false}; // Experimental joint resource/visibility tour.
+  bool stage1_resource_route{false}; // Single-car budgeted route; stage two is unchanged.
   double early_movement_scale{1.0};
   double early_damage_scale{1.0};
   int damage_scale_ticks{-1}; // -1: first fifth of this match.
@@ -125,10 +128,6 @@ struct PlannerConfig {
   bool competitive_exploration{false}; // Experimental: softly discount unknown cells a visible rival can reach earlier.
   bool finish_early_exploration{false}; // Experimental: retain a reachable early exploration plan before optional hunting.
   bool opening_route_information{false}; // Experimental: more first-step vision on equal-cost normal-resource routes.
-  bool resource_route_pickups{false}; // Experimental: visible incidental pickup, at most two extra moves with a race margin.
-  bool resource_race_yield{false}; // Experimental: discount a fresh resource a visibly approaching rival can enter first.
-  bool resource_fresh_returns{false}; // Experimental: keep full value for a currently visible resource toward our start.
-  bool resource_blocked_recovery{false}; // Experimental: leave a repeatedly failed entry for a visible alternative.
   bool survival_conditioned_progress{false}; // Experimental: value post-combat progress only in predicted survival branches.
   bool respawn_task_route{false}; // Experimental: use an observed revival to start a higher-rate public task route.
   bool safe_progress_moves{false}; // Experimental: equally short finite-goal steps outside next-Tick fire envelopes.
@@ -156,27 +155,35 @@ class Planner {
 public:
   explicit Planner(int stage=2, int max_ticks=500, PlannerConfig config={});
   Action decide(const World &w);
-  void reset() { target_.reset(); target_type_.clear(); recovery_mission_.reset(); resource_feedback_={}; goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); resource_route_evaluation=Json(); resource_race_evaluations=Json::array(); resource_recovery_evaluation=Json(); reason = "reset"; }
+  void reset() { stage1_subgoal_session_.clear(); stage1_subgoal_goal_.reset(); stage1_subgoal_evaluation_=Json(); stage1_joint_session_.clear(); stage1_joint_route_.clear(); stage1_joint_resources_.clear(); stage1_joint_walls_.clear(); stage1_joint_evaluation_=Json(); stage1_cache_session_.clear(); stage1_certified_incumbent_.clear(); stage1_cache_points_.clear(); stage1_cache_walls_.clear(); stage1_cache_distances_.clear(); stage1_route_evaluation=Json(); target_.reset(); target_type_.clear(); recovery_mission_.reset(); goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); reason = "reset"; }
   std::string reason;
   std::string goal_reason; // Selected goal before an immediate combat action overrides reason.
   Json purity_evaluations=Json::array(); // Local estimates only; never fed back as observations.
+  Json stage1_route_evaluation; // Predictions from own observations only.
   Json opening_route_evaluation; // A hypothetical equal-cost route choice, not a resource observation.
-  Json resource_route_evaluation; // Proposed incidental pickup; execution and collection require later perception.
-  Json resource_race_evaluations=Json::array(); // Observed approach and heuristic value discount, not a future enemy action.
-  Json resource_recovery_evaluation; // Failed-entry evidence and a bounded alternative, never a confirmed pickup.
   std::optional<Pos> target() const {return target_;}
 private:
+  std::optional<Action> decide_stage1_subgoal(const World &w);
+  std::string stage1_subgoal_session_;
+  uint64_t stage1_subgoal_knowledge_{};
+  uint32_t stage1_subgoal_seed_{};
+  std::optional<Pos> stage1_subgoal_goal_;
+  Json stage1_subgoal_evaluation_;
+  std::optional<Action> decide_stage1_joint(const World &w);
+  std::string stage1_joint_session_;
+  std::vector<Pos> stage1_joint_route_,stage1_joint_resources_,stage1_joint_walls_;
+  Json stage1_joint_evaluation_;
+
+  std::optional<Action> decide_stage1(const World &w);
+  std::string stage1_cache_session_;
+  int stage1_cache_width_{}, stage1_cache_height_{};
+  std::vector<Pos> stage1_cache_points_, stage1_cache_walls_;
+  std::vector<Pos> stage1_certified_incumbent_;
+  std::vector<std::vector<int>> stage1_cache_distances_;
   int stage_, max_ticks_;
   PlannerConfig config_;
   std::optional<Pos> target_;
   std::optional<std::string> recovery_mission_;
   std::string target_type_;
-  struct ResourceFeedback {
-    std::string session;
-    int processed_tick{-1}, proposed_tick{-1}, failures{}, deadline{};
-    Pos from;
-    Action action;
-    std::optional<Pos> proposed_entry, failed_entry, blocked_entry, alternative;
-  } resource_feedback_;
 };
 } // namespace rmtc

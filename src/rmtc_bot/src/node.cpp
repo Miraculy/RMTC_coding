@@ -25,6 +25,9 @@ public:
     if(name_.empty() || name_.size()>96 || name_.find_first_of("\r\n")!=std::string::npos)
       throw std::invalid_argument("invalid team_name");
     PlannerConfig planner_config;
+    planner_config.stage1_subgoal_risk=declare_parameter<bool>("stage1_subgoal_risk",true);
+    planner_config.stage1_joint_coverage=declare_parameter<bool>("stage1_joint_coverage",true);
+    planner_config.stage1_resource_route=declare_parameter<bool>("stage1_resource_route",true);
     planner_config.early_movement_scale=declare_parameter<double>("early_movement_scale",1.0);
     planner_config.early_damage_scale=declare_parameter<double>("early_damage_scale",1.0);
     planner_config.damage_scale_ticks=declare_parameter<int>("damage_scale_ticks",-1);
@@ -40,10 +43,6 @@ public:
     planner_config.competitive_exploration=declare_parameter<bool>("competitive_exploration",false);
     planner_config.finish_early_exploration=declare_parameter<bool>("finish_early_exploration",false);
     planner_config.opening_route_information=declare_parameter<bool>("opening_route_information",false);
-    planner_config.resource_route_pickups=declare_parameter<bool>("resource_route_pickups",false);
-    planner_config.resource_race_yield=declare_parameter<bool>("resource_race_yield",false);
-    planner_config.resource_fresh_returns=declare_parameter<bool>("resource_fresh_returns",false);
-    planner_config.resource_blocked_recovery=declare_parameter<bool>("resource_blocked_recovery",false);
     planner_config.survival_conditioned_progress=declare_parameter<bool>("survival_conditioned_progress",false);
     planner_config.respawn_task_route=declare_parameter<bool>("respawn_task_route",false);
     planner_config.safe_progress_moves=declare_parameter<bool>("safe_progress_moves",false);
@@ -142,12 +141,6 @@ private:
       {"revision",true},{"selected",action.json(f)},{"candidates",planner_->purity_evaluations}});
     if(!planner_->opening_route_evaluation.is_null()) record({{"kind","opening_route_evaluation"},{"tick",f.tick},
       {"revision",true},{"selected",action.json(f)},{"estimate",planner_->opening_route_evaluation}});
-    if(!planner_->resource_route_evaluation.is_null()) record({{"kind","resource_route_evaluation"},{"tick",f.tick},
-      {"revision",true},{"selected",action.json(f)},{"estimate",planner_->resource_route_evaluation}});
-    if(!planner_->resource_race_evaluations.empty()) record({{"kind","resource_race_evaluation"},{"tick",f.tick},
-      {"revision",true},{"selected",action.json(f)},{"estimates",planner_->resource_race_evaluations}});
-    if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
-      {"revision",true},{"selected",action.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
   }
   void collect_ai(bool allow_revision=true) {
     if(!ai_)return;
@@ -255,17 +248,12 @@ private:
         {"selected",a.json(f)},{"candidates",planner_->purity_evaluations}});
       if(!planner_->opening_route_evaluation.is_null()) record({{"kind","opening_route_evaluation"},{"tick",f.tick},
         {"selected",a.json(f)},{"estimate",planner_->opening_route_evaluation}});
-      if(!planner_->resource_route_evaluation.is_null()) record({{"kind","resource_route_evaluation"},{"tick",f.tick},
-        {"selected",a.json(f)},{"estimate",planner_->resource_route_evaluation}});
-      if(!planner_->resource_race_evaluations.empty()) record({{"kind","resource_race_evaluation"},{"tick",f.tick},
-        {"selected",a.json(f)},{"estimates",planner_->resource_race_evaluations}});
-      if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
-        {"selected",a.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},
         {"hp",f.hp},{"alive",f.alive},{"protected",f.protected_spawn},
         {"public_missions",f.missions},{"initial_spawn",world_.spawn?Json::array({world_.spawn->x,world_.spawn->y}):Json()},
         {"action",a.json(f)},{"reason",planner_->reason},{"goal_reason",planner_->goal_reason},{"last_action",decoded["self"].value("last_action",Json())},
         {"resource_value",f.resource_value},{"effective_damage",f.effective_damage},{"completed",f.completed},{"latency_ms",elapsed},
+        {"stage1_route_evaluation",planner_->stage1_route_evaluation},
         {"target",target?Json::array({target->x,target->y}):Json()},
         {"observed_resources",observed_resources},{"observed_enemies",observed_enemies},
         {"known_obstacles",known_obstacles},{"map_size",{f.width,f.height}},{"vision_radius",f.radius},
