@@ -19,3 +19,6 @@ __pycache__/
 .DS_Store
 
 experiments/
+
+# 本地实验备份目录（不随仓库分发）
+.backup-rmtc_bot-*/

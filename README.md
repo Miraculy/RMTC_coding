@@ -4,6 +4,13 @@
 
 **可以直接在 Ubuntu 上开发和运行，Docker 为可选环境。** 本仓库本身就是一个 ROS 2 工作空间，以下未特别说明的命令均在仓库根目录执行，目录名称和存放位置可以自行选择。
 
+## 当前版本状态（2026-10-26 更新）
+
+- **第一阶段默认算法已切换为 e075**：侦察候选排序由 `marginal_view/(distance+1)^0.85` 改为 `0.75`（偏近处、可快速兑现的视野收益）。`run_contestant.sh A 1` 不传任何额外参数即启用；如需回退旧行为，显式传 `-p stage1_resource_route:=false -p stage1_joint_coverage:=false -p stage1_subgoal_risk:=false`。
+- **第二阶段默认行为不变**：`ai.cpp` 与原正式包完全一致；`core.cpp` 的阶段二默认决策路径未改。
+- **阶段一验证（真实练习裁判）**：19 张 20×20 开发图与 Codex v2 逐图一致（35.6842，满分 4）；另在 4 组各 30 张独立图（`stage1_eval.generate` 由练习裁判模板生成的 18×18、25%/30% 障碍图）上复核：合并 139 局 **+0.1295**，满分 **41→43**，仅 1 张 −2（未超单图 2 分门槛），低负载 P95 ≤23.7 ms。摘要与复现方法见 [阶段一 e075 验证摘要](docs/STAGE1_E075_VALIDATION.md)。
+- 改动前的正式包与本版备份、逐图原始数据与安装记录另存档于仓库外维护目录 `../analysis_opt_order_20261025/`（`INSTALL_LOG.md`、`REPORT.md`、`versions/e075/`），不随仓库提交。
+
 ## 环境要求
 
 - Ubuntu 22.04、ROS 2 Humble。
@@ -47,6 +54,8 @@ colcon build --symlink-install --packages-select rmtc_bot \
 ```
 
 生成目录为 `build/`、`install/` 和 `log/`。换机器或更改工作空间位置后，重新构建，不要直接复用其他成员的生成目录。
+
+> 说明：本 README 中阶段一 e075 的逐图分数由 **Release** 构建（`-DCMAKE_BUILD_TYPE=Release`）实测；`build_contestant.sh` 默认使用 `RelWithDebInfo`。如需复现文中分数，可临时用 `colcon build --packages-select rmtc_bot --cmake-args -DCMAKE_BUILD_TYPE=Release` 构建后对比。
 
 ## 运行参赛程序
 
@@ -203,6 +212,21 @@ export ROS_DOMAIN_ID=27
 
 在裁判所在机器的浏览器打开 [练习控制台](http://127.0.0.1:8080)，待程序接入后点击“开始 / 继续”。通过动作诊断和后续感知中的 `self.last_action` 确认双向通信。
 
+### 第一阶段默认算法（e075）
+
+当前阶段一默认使用 e075：在 `stage1_subgoal.cpp` 中把侦察候选排序的距离指数从 `0.85` 调为 `0.75`，即更偏好近处、可快速兑现的视野收益，减少长距离侦察。该改动很小：在 139 局真实裁判对照中仅 6 张图的决策发生变化，其余逐图不变；合并均值 +0.13、满分 41→43，唯一退步为 1 张 −2。
+
+回退旧行为：
+
+```bash
+./run_contestant.sh A 1 -p stage1_resource_route:=false \
+  -p stage1_joint_coverage:=false -p stage1_subgoal_risk:=false
+```
+
+也可以只关闭某一项做消融；三个参数默认 `true` 的目的是让正式启动无需额外参数即使用已验证算法。规划层仍只使用本队感知与公开公告，不读取练习配置或裁判全图。
+
+完整验证数据、逐图结果与复现命令见 [阶段一 e075 验证摘要](docs/STAGE1_E075_VALIDATION.md)。
+
 ### 第二阶段
 
 先停止上一场裁判和选手，再在裁判目录启动：
@@ -297,6 +321,9 @@ unset DEEPSEEK_API_KEY
 | `ai_timeout_ms` | `12000`，请求在独立线程中执行 |
 | `ai_max_tokens` | `2500`，需符合服务方输出限制 |
 | `ai_budget` | `90`，本地成功调用预算；`0` 为不限制，网关配额仍然生效 |
+| `stage1_resource_route` | `true`；第一阶段启用 e075 规划器（默认） |
+| `stage1_joint_coverage` | `true`；第一阶段联合资源-视野评估（默认） |
+| `stage1_subgoal_risk` | `true`；第一阶段子目标/路线评估（默认） |
 | `token_file` | 可选私密令牌文件，换场时读取；默认在网关模式读 `RMTC_TEAM_TOKEN`，DeepSeek 模式读 `DEEPSEEK_API_KEY` |
 | `log_dir` | `RMTC_LOG_DIR`，未设置时使用 `~/.rmtc-bot` |
 
@@ -312,16 +339,20 @@ unset DEEPSEEK_API_KEY
 
 ```text
 src/rmtc_bot/
-├── include/rmtc_bot/    # 核心类型、规划与 AI 客户端接口
-├── src/node.cpp        # ROS 通信、场次管理、动作提交和日志
-├── src/core.cpp        # 感知解析、地图记忆、目标选择、路径和战斗评估
-├── src/ai.cpp          # 异步 HTTP、模型输出解析、预算和失败处理
-├── config/             # 参数配置
-└── test/               # C++ 单元测试
-tools/                  # 维护者环境中的开发联调脚本
-build_contestant.sh      # 构建入口
-run_contestant.sh        # 运行入口
-run_deepseek.sh          # 本地直连 DeepSeek 官方、关闭思考的运行入口
+├── include/rmtc_bot/        # 核心类型、规划配置与 AI 客户端接口
+├── src/node.cpp             # ROS 通信、场次管理、参数、动作提交和日志
+├── src/core.cpp             # 感知解析、地图记忆、路径与第二阶段决策
+├── src/stage1_planner.cpp   # 第一阶段基础规划（资源/探索/路径）
+├── src/stage1_joint.cpp     # 第一阶段联合资源-视野巡逻（实验开关）
+├── src/stage1_subgoal.cpp   # 第一阶段子目标/路线评估（e075 改动位置）
+├── src/ai.cpp               # 异步 HTTP、模型输出解析、预算和失败处理
+├── config/                  # 参数配置
+├── test/                    # C++ 单元测试（core_test 140 项 + ai_test 14 项）
+└── tools/                   # ai_benchmark / event_revision_benchmark / stage1_* 开发工具
+tools/                       # 维护者环境中的 Python 联调与审计脚本
+build_contestant.sh          # 构建入口
+run_contestant.sh            # 运行入口
+run_deepseek.sh              # 本地直连 DeepSeek 官方、关闭思考的运行入口
 ```
 
 第二阶段默认启用前期资源/探索过程中的有限脱离交火收益（`productive_escape=true`），可通过 `-p productive_escape:=false` 对照旧行为。其跨地图收益与退步案例见 [VALIDATION.md](VALIDATION.md)，实验开关说明见 [docs/STRATEGY.md](docs/STRATEGY.md)。
@@ -359,6 +390,8 @@ colcon test-result --verbose
 
 运行日志为 JSONL，记录动作、回执、得分、任务和 AI 请求结果，以及模型、token 用量、思考内容长度，不记录密钥、HTTP 请求头或思考原文。`build/`、`install/`、`log/` 和 `test-results/` 已加入 Git 忽略列表。
 
+阶段一 e075 的逐图真实裁判数据（19 张 20×20 开发图 + 4 组各 30 张独立图）、离线反事实工具与安装验证记录，摘要见 [阶段一 e075 验证摘要](docs/STAGE1_E075_VALIDATION.md)，原始数据存档于仓库外维护目录 `../analysis_opt_order_20261025/`；当前包的单元测试为 `core_test` 140 项、`ai_test` 14 项。
+
 ## 可选：Docker 和 IDE
 
 Docker 使用者只需进入已配置好依赖、挂载本仓库的容器，然后按同样的构建和运行步骤操作。以下是**维护者现有环境示例**，其他成员按自己的容器名和挂载目录调整：
@@ -385,3 +418,10 @@ CLion 可打开 `src/rmtc_bot` 作为 CMake 项目。其他支持编译数据库
 按新的复查方向，原阶段目标已[归档暂停](docs/GOAL_ARCHIVE_2026-10-23.md)，逐项判断与实施结果见[新方向记录](docs/NEW_IDEA_IMPLEMENTATION.md)。首项`event_revisions`用于模型明确引用既有事件并修正其解释，仍默认关闭；本地及真实合成样例通过，但完整对照尚无增分，部分反馈迟到。正式入口继续只控制本席位。
 
 第二项`purity_joint_actions`已实现单敌攻击/防御互斥估值，默认关闭。130项检查通过；四图真实提前反馈对照触发了估值，但行动、比分与排名均未改变，暂不推广。具体适用范围与完整证据仍见[新方向记录](docs/NEW_IDEA_IMPLEMENTATION.md)。
+
+
+## 变更记录
+
+- **2026-10-26**：按当前实现更新 README：补充“当前版本状态”、阶段一 e075 默认算法与回退方式、参数表阶段一默认项、目录结构、验证与测试说明。
+- **2026-10-25**：正式包阶段一默认算法切换为 e075（`node.cpp` 中 `stage1_resource_route` / `stage1_joint_coverage` / `stage1_subgoal_risk` 默认值改为 `true`）；真实裁判验证：139 局合并 +0.1295、满分 41→43、1 张 −2；同机低负载 P95 ≤23.7 ms。改动前备份：`contestant_ws/.backup-rmtc-bot-e075-defaults-false-20261025-214900/`。
+- **2026-10-25**：正式包源码更新为 v4-order-v2 实验分支 + e075 单行改动，阶段一逻辑拆分为 `stage1_planner.cpp` / `stage1_joint.cpp` / `stage1_subgoal.cpp`；第二阶段默认决策路径等价于原包（AI 客户端逐字节一致）。
