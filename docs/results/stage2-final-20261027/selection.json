@@ -1,0 +1,201 @@
+{
+  "kind": "historical_selection_evidence_not_new_matches",
+  "selected": "17af+B1 recovery",
+  "source_reports": [
+    "docs/RESOURCE_RECOVERY_20261025.md",
+    "docs/HETEROGENEOUS_BENCHMARK_20261024.md",
+    "docs/STAGE2_FAIR_RESOURCE_REVIEW_20261026.md"
+  ],
+  "historical_recovery_main_16_pairs": {
+    "strict_first": [
+      4,
+      5
+    ],
+    "mean_rank": [
+      2.5,
+      2.3125
+    ],
+    "mean_score": [
+      36.79375,
+      37.60625
+    ],
+    "resource_win_tie_loss": [
+      1,
+      15,
+      0
+    ],
+    "limitation": "gain concentrated in one known blocked-entry case"
+  },
+  "fair_review": {
+    "groups": {
+      "count": {
+        "pairs": 8,
+        "maps": 2,
+        "resource": [
+          55.0,
+          55.0
+        ],
+        "resource_points": [
+          13.75,
+          13.75
+        ],
+        "score": [
+          39.8625,
+          39.8625
+        ],
+        "top_two": [
+          0.625,
+          0.625
+        ],
+        "shared_second_tie": [
+          0,
+          0
+        ],
+        "resource_win_tie_loss": [
+          0,
+          8,
+          0
+        ],
+        "mean_resource_delta": 0.0,
+        "median_resource_delta": 0.0,
+        "cluster_bootstrap_95": [
+          0.0,
+          0.0
+        ],
+        "worst_delta": 0.0,
+        "p10_resource": [
+          30.0,
+          30.0
+        ]
+      },
+      "value": {
+        "pairs": 8,
+        "maps": 2,
+        "resource": [
+          50.0,
+          50.0
+        ],
+        "resource_points": [
+          12.5,
+          12.5
+        ],
+        "score": [
+          41.25,
+          41.25
+        ],
+        "top_two": [
+          0.5,
+          0.5
+        ],
+        "shared_second_tie": [
+          0,
+          0
+        ],
+        "resource_win_tie_loss": [
+          0,
+          8,
+          0
+        ],
+        "mean_resource_delta": 0.0,
+        "median_resource_delta": 0.0,
+        "cluster_bootstrap_95": [
+          0.0,
+          0.0
+        ],
+        "worst_delta": 0.0,
+        "p10_resource": [
+          30.0,
+          30.0
+        ]
+      },
+      "random": {
+        "pairs": 8,
+        "maps": 2,
+        "resource": [
+          50.0,
+          50.0
+        ],
+        "resource_points": [
+          12.5,
+          12.5
+        ],
+        "score": [
+          35.0,
+          35.0
+        ],
+        "top_two": [
+          0.375,
+          0.375
+        ],
+        "shared_second_tie": [
+          2,
+          2
+        ],
+        "resource_win_tie_loss": [
+          0,
+          8,
+          0
+        ],
+        "mean_resource_delta": 0.0,
+        "median_resource_delta": 0.0,
+        "cluster_bootstrap_95": [
+          0.0,
+          0.0
+        ],
+        "worst_delta": 0.0,
+        "p10_resource": [
+          10.0,
+          10.0
+        ]
+      }
+    },
+    "fair": {
+      "pairs": 16,
+      "maps": 4,
+      "resource": [
+        52.5,
+        52.5
+      ],
+      "resource_points": [
+        13.125,
+        13.125
+      ],
+      "score": [
+        40.55625,
+        40.55625
+      ],
+      "top_two": [
+        0.5625,
+        0.5625
+      ],
+      "shared_second_tie": [
+        0,
+        0
+      ],
+      "resource_win_tie_loss": [
+        0,
+        16,
+        0
+      ],
+      "mean_resource_delta": 0.0,
+      "median_resource_delta": 0.0,
+      "cluster_bootstrap_95": [
+        0.0,
+        0.0
+      ],
+      "worst_delta": 0.0,
+      "p10_resource": [
+        30.0,
+        30.0
+      ]
+    },
+    "recovery_starts": 0,
+    "actual_matches": 48,
+    "all_actions_and_results_identical": true
+  },
+  "limitations": [
+    "development maps, related planner-family opponents",
+    "no new matches in this release",
+    "not a guarantee of stable top-two ranking or formal AI qualification"
+  ]
+}

@@ -1,0 +1,47 @@
+# Ranking release: frozen 17af strategy, only blocked recovery enabled.
+/**:
+  ros__parameters:
+    early_movement_scale: 1.0
+    early_damage_scale: 1.0
+    damage_scale_ticks: -1
+    resource_paths_exact: false
+    resource_lookahead: 3
+    tactical_forecast: false
+    forecast_start_tick: 0
+    early_interception: false
+    frontier_lookahead: false
+    information_paths: false
+    race_aware_resources: false
+    contested_task_resources: false
+    competitive_exploration: false
+    finish_early_exploration: false
+    opening_route_information: false
+    resource_route_pickups: false
+    resource_race_yield: false
+    resource_fresh_returns: false
+    resource_blocked_recovery: true
+    survival_conditioned_progress: false
+    respawn_task_route: false
+    safe_progress_moves: false
+    break_pursuit_cycles: true
+    coordinate_before_hunt: false
+    standoff_fire_risk: false
+    standoff_attack_probe: false
+    standoff_robust_trade: true
+    purity_joint_actions: false
+    resource_beam: false
+    transient_occupancy: true
+    event_timing: false
+    fortress_time_budget: false
+    productive_escape: true
+    validated_enemy_memory: false
+    event_escape: false
+    use_event_interpretation: true
+    event_unavoidable_cost: false
+    frontier_distance_window: false
+    ray_occlusion: false
+    score_aware_combat: true
+    damage_reserve: 120
+    event_revisions: false
+    ai_action_revision: false
+    ai_enabled: true

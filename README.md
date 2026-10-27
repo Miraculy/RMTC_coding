@@ -4,10 +4,10 @@
 
 **可以直接在 Ubuntu 上开发和运行，Docker 为可选环境。** 本仓库本身就是一个 ROS 2 工作空间，以下未特别说明的命令均在仓库根目录执行，目录名称和存放位置可以自行选择。
 
-## 当前版本状态（2026-10-26 更新）
+## 当前版本状态（2026-10-27 更新）
 
 - **第一阶段默认算法已切换为 e075**：侦察候选排序由 `marginal_view/(distance+1)^0.85` 改为 `0.75`（偏近处、可快速兑现的视野收益）。`run_contestant.sh A 1` 不传任何额外参数即启用；如需回退旧行为，显式传 `-p stage1_resource_route:=false -p stage1_joint_coverage:=false -p stage1_subgoal_risk:=false`。
-- **第二阶段默认行为不变**：`ai.cpp` 与原正式包完全一致；`core.cpp` 的阶段二默认决策路径未改。
+- **第二阶段最终交付选择 B1**：完整17af稳定源码＋`resource_blocked_recovery=true`，保留原攻防、追击保护及模型事件解释。以排名为目标选择既有已测配置；不启用已退步的探索实验。源码独立保存在 `stage2/src/`，`run_contestant.sh A 2` 自动使用该版本和冻结参数。选择依据及局限见 [二阶段最终交付](docs/STAGE2_FINAL_RELEASE_20261027.md)。
 - **阶段一验证（真实练习裁判）**：19 张 20×20 开发图与 Codex v2 逐图一致（35.6842，满分 4）；另在 4 组各 30 张独立图（`stage1_eval.generate` 由练习裁判模板生成的 18×18、25%/30% 障碍图）上复核：合并 139 局 **+0.1295**，满分 **41→43**，仅 1 张 −2（未超单图 2 分门槛），低负载 P95 ≤23.7 ms。摘要与复现方法见 [阶段一 e075 验证摘要](docs/STAGE1_E075_VALIDATION.md)。
 - 改动前的正式包与本版备份、逐图原始数据与安装记录另存档于仓库外维护目录 `../analysis_opt_order_20261025/`（`INSTALL_LOG.md`、`REPORT.md`、`versions/e075/`），不随仓库提交。
 
@@ -45,17 +45,18 @@ sudo apt install -y ros-humble-rclpy python3-requests libcurl4
 ./build_contestant.sh
 ```
 
-脚本会自动加载 ROS Humble 环境，并用 colcon 构建 `rmtc_bot`。也可以手工构建：
+脚本会自动加载 ROS Humble 环境，依次构建根目录的一阶段包与 `stage2/` 中的二阶段发布包。只构建二阶段可运行 `./build_stage2.sh`。也可以分别构建：
 
 ```bash
 source /opt/ros/humble/setup.bash
-colcon build --symlink-install --packages-select rmtc_bot \
+colcon build --base-paths src --symlink-install --packages-select rmtc_bot \
   --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+./build_stage2.sh
 ```
 
-生成目录为 `build/`、`install/` 和 `log/`。换机器或更改工作空间位置后，重新构建，不要直接复用其他成员的生成目录。
+一阶段生成目录为 `build/`、`install/`、`log/`；二阶段分别为 `stage2/build/`、`stage2/install/`、`stage2/log/`。`stage2/COLCON_IGNORE` 防止根工作空间自动扫描到同名包。换机器或更改工作空间位置后，重新构建，不要直接复用其他成员的生成目录。
 
-> 说明：本 README 中阶段一 e075 的逐图分数由 **Release** 构建（`-DCMAKE_BUILD_TYPE=Release`）实测；`build_contestant.sh` 默认使用 `RelWithDebInfo`。如需复现文中分数，可临时用 `colcon build --packages-select rmtc_bot --cmake-args -DCMAKE_BUILD_TYPE=Release` 构建后对比。
+> 说明：本 README 中阶段一 e075 的逐图分数由 **Release** 构建实测；通用脚本对一阶段仍默认使用 `RelWithDebInfo`，对二阶段使用 `Release`。附加的 CMake 参数会传给两次构建；只调整二阶段时使用 `build_stage2.sh`。
 
 ## 运行参赛程序
 
@@ -81,7 +82,7 @@ export AI_GATEWAY=http://127.0.0.1:8080/v1/chat/completions
 ./run_contestant.sh A 2
 ```
 
-脚本的两个位置参数分别为 **席位 A/B/C/D** 和 **阶段 1/2**。它会自动加载本工作空间的安装环境，并设置对应的默认总 Tick：第一阶段 100，第二阶段 500。
+脚本的两个位置参数分别为 **席位 A/B/C/D** 和 **阶段 1/2**。第一阶段使用根安装目录，第二阶段转入 `run_stage2_final.sh`，直接运行独立安装程序并加载 `stage2/config/final.yaml`。默认总 Tick 分别为100、500；二阶段尚未构建时明确报错，不回退到根目录旧程序。
 
 第二阶段换席位时，需要同时更换令牌。例如 B 席位在练习中使用 `practice-B`。同一席位只能由一个选手程序或参考车控制。
 
@@ -93,12 +94,12 @@ export AI_GATEWAY=http://127.0.0.1:8080/v1/chat/completions
 ./run_contestant.sh A 2 -p max_ticks:=200
 ```
 
-也可在加载环境后直接运行 ROS 可执行程序：
+也可直接使用二阶段发布入口；后置的显式 ROS 参数仍可覆盖发布配置：
 
 ```bash
-source /opt/ros/humble/setup.bash
-source install/setup.bash
-ros2 run rmtc_bot contestant --ros-args -p team:=A -p stage:=2
+./run_stage2_final.sh A
+# 仅用于复现B0对照，最终发布默认启用阻塞恢复
+./run_stage2_final.sh A -p resource_blocked_recovery:=false
 ```
 
 ## 正式比赛启动流程
@@ -350,8 +351,13 @@ src/rmtc_bot/
 ├── test/                    # C++ 单元测试（core_test 140 项 + ai_test 14 项）
 └── tools/                   # ai_benchmark / event_revision_benchmark / stage1_* 开发工具
 tools/                       # 维护者环境中的 Python 联调与审计脚本
-build_contestant.sh          # 构建入口
-run_contestant.sh            # 运行入口
+stage2/src/rmtc_bot/         # 完整冻结二阶段源码（与根一阶段包隔离）
+stage2/config/final.yaml     # 二阶段B1发布参数
+stage2/SOURCE_MANIFEST.json  # 发布源码和参数校验值
+build_contestant.sh          # 依次构建两阶段
+build_stage2.sh              # 只构建二阶段
+run_contestant.sh            # 按阶段选择安装程序
+run_stage2_final.sh          # 二阶段发布入口
 run_deepseek.sh              # 本地直连 DeepSeek 官方、关闭思考的运行入口
 ```
 
@@ -378,8 +384,17 @@ python3 tools/deepseek_wire_test.py --live-deepseek --schema-repair-fault < /pri
 ```bash
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-colcon test --packages-select rmtc_bot
+colcon test --base-paths src --packages-select rmtc_bot
 colcon test-result --verbose
+```
+
+独立二阶段发布包的检查：
+
+```bash
+source /opt/ros/humble/setup.bash
+colcon --log-base stage2/log test --base-paths stage2/src --build-base stage2/build --packages-select rmtc_bot
+colcon test-result --test-result-base stage2/build --verbose
+python3 tools/verify_stage2_release.py
 ```
 
 当前已通过的场次、成绩、决策耗时和验证范围见 [VALIDATION.md](VALIDATION.md)。已完成 DeepSeek 非思考的有限事件样例、合成 ROS 闭环，以及本地练习裁判的完整真实模型对抗；正式 AI 审计仍待验证，跨地图稳定第一尚未达标。

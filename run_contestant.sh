@@ -7,6 +7,9 @@ case "$TEAM" in A|B|C|D) ;; *) echo '席位必须为 A/B/C/D' >&2; exit 2;; esac
 case "$STAGE" in 1) MAX_TICKS=100;; 2) MAX_TICKS=500;; *) echo '阶段必须为 1/2' >&2; exit 2;; esac
 if (( $# >= 1 )); then shift; fi
 if (( $# >= 1 )); then shift; fi
+if [[ "$STAGE" == 2 ]]; then
+  exec "$HERE/run_stage2_final.sh" "$TEAM" "$@"
+fi
 source /opt/ros/humble/setup.bash
 source "$HERE/install/setup.bash"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-27}"

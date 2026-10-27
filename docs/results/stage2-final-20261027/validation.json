@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-27",
+  "release_build": "Release",
+  "release_binary_sha256": "4e34c1543ecc9a42677c5a4df422fa0075e2ed59bec2a966206ae8a8660239da",
+  "historical_binary_sha256": "17af71e3389cbdb6478a959e391b0aa462d04fbcc5341846e1d8885c1cea4a8c",
+  "source_files_equal_to_f049728": 12,
+  "profile_parameters": 44,
+  "tests": {
+    "core_test": {
+      "tests": 136,
+      "failures": 0,
+      "errors": 0,
+      "disabled": 0
+    },
+    "ai_test": {
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "disabled": 0
+    }
+  },
+  "ctest_targets": {
+    "passed": 2,
+    "failed": 0
+  },
+  "entry_smoke": {
+    "cases": 2,
+    "actual_parameters_checked_per_case": 47,
+    "outside_repository": true,
+    "ai_disabled": true,
+    "perception_sent": 0,
+    "matches_started": 0
+  },
+  "root_stage1_source_unchanged_from_HEAD": true,
+  "root_installed_binary_sha256": "17af71e3389cbdb6478a959e391b0aa462d04fbcc5341846e1d8885c1cea4a8c",
+  "initial_check_failures": [
+    {
+      "kind": "test_discovery",
+      "reason": "old archives contain duplicate package names; zero tests ran",
+      "fix": "explicit --base-paths stage2/src"
+    },
+    {
+      "kind": "smoke_harness_import",
+      "reason": "Humble lacks rclpy.parameter_client; no node started",
+      "fix": "use rcl_interfaces/GetParameters"
+    },
+    {
+      "kind": "smoke_harness_executor",
+      "reason": "default executor did not use the independent context",
+      "fix": "explicit SingleThreadedExecutor context; child cleaned in finally"
+    }
+  ],
+  "scope": "release verification only; historical scores not rerun; no external model calls"
+}
