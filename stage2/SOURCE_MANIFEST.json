@@ -10,10 +10,10 @@
     "src/rmtc_bot/include/rmtc_bot/core.hpp": "8643716ddc9046570d2f80a62a7c1474450e097fbf9de3149d7fedbda8fa30f1",
     "src/rmtc_bot/package.xml": "87001d0e17108b8f3e2b4974ab143c2ae08d3dae8edb089abeff9070c7e011a8",
     "src/rmtc_bot/src/ai.cpp": "612566b19dca4b6045735db43bbb3e15d4f359c79e267a5075593029963d5aa7",
-    "src/rmtc_bot/src/core.cpp": "cd6470a5d42c27bd08e6e08d5c57aef513c27452557409d2aa282b1017b140e3",
+    "src/rmtc_bot/src/core.cpp": "ef9667dda689fd9236815f5b7c2f15782844d2edfec2580c45037836211f72ba",
     "src/rmtc_bot/src/node.cpp": "1ea04506a59e9bb6078a1b4f72e9bf9c9788e7442a2e1ef00d4abfc325a3473b",
     "src/rmtc_bot/test/ai_test.cpp": "bc3b052654fccb7cdbc13294a85aef81c8bb698339d17db39ddd67e54c21c62f",
-    "src/rmtc_bot/test/core_test.cpp": "11e68af2199a3d3cd67bc93b992e676e1121ccf2457e81bbfa8e87531b7c28ca",
+    "src/rmtc_bot/test/core_test.cpp": "db32f149755299d03b712cba680c7e270533437a4247c8e2e52ad1d0b318515b",
     "src/rmtc_bot/tools/ai_benchmark.cpp": "e61c8acce9cb0e4564e28c960495d364280b3ec1c7d3f6e5cd8cdd403ab9aa4b",
     "src/rmtc_bot/tools/event_revision_benchmark.cpp": "b1989e82213b6ad53ff154ff28e6e5747f6d9855fb963c58a5ced99dbb58f986"
   },
@@ -66,5 +66,7 @@
       "ai_action_revision": false,
       "ai_enabled": true
     }
-  }
+  },
+  "release": "v2-defend-off-highvalue",
+  "v2_change": "stage2 no longer emits defend; opening (tick<40) gives +6 reward to known 20R high-value resources in the team own quadrant. Accepted from local A/B on B1 (12 maps x4 seats) and B2 (8 maps x4 seats): mean rank 2.31->2.17 (B1), 2.56->2.19 (B2); top-two 28->30/48 and 14->20/32; strict first 14->17/48 and 10->13/32; deaths 229->191 and 157->135; D-loss 10080->7755 and 9290->7770; R unchanged within -0.6; defend ticks 4303->0 and 4208->0."
 }

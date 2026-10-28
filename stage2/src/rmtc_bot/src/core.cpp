@@ -752,6 +752,14 @@ Action Planner::decide(const World &observed) {
     double reward=stage_==1?r.value*.2:std::min(r.value,std::max(0.0,120-f.resource_value))*.25;
     double task_bonus=stage_==2?task_reward(r.value,0,0,0):0;
     reward+=task_bonus;
+    if(stage_==2 && w.spawn && f.tick<40 && r.value>=20) {
+      const bool same_half_x=(r.pos.x<f.width/2)==(w.spawn->x<f.width/2);
+      const bool same_half_y=(r.pos.y<f.height/2)==(w.spawn->y<f.height/2);
+      // candidate: prefer 20R high-value resources in our own quadrant during
+      // the opening, so a visible high-value is not deferred behind two normal
+      // resource missions and then lost to an opponent.
+      if(same_half_x && same_half_y) reward+=6.0;
+    }
     double denial_bonus=r.seen>=f.tick-1?denial_reward(r.pos,r.value,steps[r.pos.y*f.width+r.pos.x]):0;
     reward+=denial_bonus;
     if(stage_==2) {
@@ -1582,7 +1590,7 @@ Action Planner::decide(const World &observed) {
     }
   }
   std::vector<Action> actions{{"wait",""}};
-  if(stage_==2) {actions.push_back({"defend",""});if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});}
+  if(stage_==2) {if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});} // candidate: no defend
   for(const auto &d:dirs) actions.push_back({"move",d});
   Action best; double best_score=-inf;
   for(const auto &a:actions) {
