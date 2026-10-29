@@ -7,11 +7,11 @@
     "src/rmtc_bot/CMakeLists.txt": "726f348ba342b03feb8b1e50720d0f793810c21f07db6635776c6aead77bcf09",
     "src/rmtc_bot/config/contestant.yaml": "75c6fb59b16d294ebd956448f3f974d0b10d57c67421b8ed687f6d39360afbd6",
     "src/rmtc_bot/include/rmtc_bot/ai.hpp": "8c9591b122c4b7fa61387f4a4460acfa69a94af0a93c569323ea2307860f12bb",
-    "src/rmtc_bot/include/rmtc_bot/core.hpp": "86cbe7fcb0733426c0bb5c94aa1b56843f4d20e3af8049545add6f16bf2ae7c3",
+    "src/rmtc_bot/include/rmtc_bot/core.hpp": "0e33c58d2cacab9763719c1b1cfe643a110783cb1215779f866b43d9b5b934bd",
     "src/rmtc_bot/package.xml": "87001d0e17108b8f3e2b4974ab143c2ae08d3dae8edb089abeff9070c7e011a8",
     "src/rmtc_bot/src/ai.cpp": "612566b19dca4b6045735db43bbb3e15d4f359c79e267a5075593029963d5aa7",
-    "src/rmtc_bot/src/core.cpp": "0a219e8c2dc1c713d12d16808b15a0435ce39d9f37cfcd1ee59e9849ca92a440",
-    "src/rmtc_bot/src/node.cpp": "6435858833aea142e4950c2da59fa1d03cf44884010bd7e7953c76c1995285f5",
+    "src/rmtc_bot/src/core.cpp": "299f3ad1028c55951deea6b9b832656eba17635d65a2ff472bd4d50a0efd1990",
+    "src/rmtc_bot/src/node.cpp": "48fa1a95dde99e4f2ab5a44233c65af5f2e86a875739311e657f9346ea85cd2f",
     "src/rmtc_bot/test/ai_test.cpp": "bc3b052654fccb7cdbc13294a85aef81c8bb698339d17db39ddd67e54c21c62f",
     "src/rmtc_bot/test/core_test.cpp": "ad0e8c510fcc18389f120aec2b326bb9acd2e509c60663549675f5f799f1f23d",
     "src/rmtc_bot/tools/ai_benchmark.cpp": "e61c8acce9cb0e4564e28c960495d364280b3ec1c7d3f6e5cd8cdd403ab9aa4b",
@@ -19,7 +19,7 @@
   },
   "profile": {
     "path": "config/final.yaml",
-    "sha256": "ce26fbbeda073fb2edbcbaf0668d60d35de5dd47c8f5e9a69d3df435beb6dcbc",
+    "sha256": "2fbc98ca1d3789e5ed0b6c7693dc1524686da60ac9457849164bad865a65dea6",
     "parameters": {
       "early_movement_scale": 1.0,
       "early_damage_scale": 1.0,
@@ -41,6 +41,7 @@
       "resource_fresh_returns": false,
       "resource_blocked_recovery": true,
       "purity_defense": true,
+      "angel_value": true,
       "observation_detour": true,
       "observation_extra_limit": 2,
       "observation_attempt_limit": 1,
@@ -74,9 +75,10 @@
       "ai_enabled": true
     }
   },
-  "release": "v2.3-purity-defense",
+  "release": "v2.4-angel-value",
   "v2_change": "stage2 no longer emits defend; opening (tick<40) gives +6 reward to known 20R high-value resources in the team own quadrant. Accepted from local A/B on B1 (12 maps x4 seats) and B2 (8 maps x4 seats): mean rank 2.31->2.17 (B1), 2.56->2.19 (B2); top-two 28->30/48 and 14->20/32; strict first 14->17/48 and 10->13/32; deaths 229->191 and 157->135; D-loss 10080->7755 and 9290->7770; R unchanged within -0.6; defend ticks 4303->0 and 4208->0.",
   "v2_1_change": "stage2 v2.1 keeps v2 (no defend, own-quadrant 20R opening bonus) and enables the accepted guard+F1 additions from corrected evaluation: observation_detour with extra_limit=2, attempt_limit=1, min_tick=8, max_known_resources=1, and resource_arrival_value. Corrected paired tests vs v2: B1 R 51.76 vs 50.88, score 41.66 vs 40.88, rank 1.853 vs 2.059, top-two 26 vs 23; B2 R 49.38 vs 49.38, score 41.14 vs 40.99, rank 2.062 vs 2.125, top-two 21 vs 20. Behavior changed in 12/34 B1 and 9/32 B2 trajectories; AI-off, mock referee, frozen opponents. R target base+2 was not met; B1 deaths 9.06 vs 8.24 and real-LLM conditions remain unverified.",
   "v2_2_change": "LLM timeliness only: submit only forecast event notices from both the /referee/event_text topic and perception, instead of every start/hit/effect line. Planner and AI-off behavior are unchanged. On S03/S04 real-DeepSeek runs this reduced AI requests from 50 to 17-18 and moved first event interpretation from 14-142 ticks late to 1-4 ticks before event start; it changed 383/500 and 394/500 A decisions respectively (mostly fortress targeting) but did not change score, rank, R or mission completion in those single games. Merged as a latency/queue fix, not as a score claim.",
-  "v2_3_change": "Adds purity_defense=false by default; final.yaml enables it. Stage two normally excludes DEFEND; this candidate adds DEFEND only while the purity event is active, and values the incoming-threat branch. An enclosed 3x3 test arena with adjacent practice bots and purity from tick 1 produced 12 DEFEND actions and stable HP 60 when enabled, versus death at tick 8 when disabled. Normal S03/S04 real-DeepSeek games never selected DEFEND because A was not attacked during the purity window; no resource logic, planner target logic, or no-defend behavior outside the event changed. core_test 137/137 and ai_test 14/14 pass."
+  "v2_3_change": "Adds purity_defense=false by default; final.yaml enables it. Stage two normally excludes DEFEND; this candidate adds DEFEND only while the purity event is active, and values the incoming-threat branch. An enclosed 3x3 test arena with adjacent practice bots and purity from tick 1 produced 12 DEFEND actions and stable HP 60 when enabled, versus death at tick 8 when disabled. Normal S03/S04 real-DeepSeek games never selected DEFEND because A was not attacked during the purity window; no resource logic, planner target logic, or no-defend behavior outside the event changed. core_test 137/137 and ai_test 14/14 pass.",
+  "v2_4_change": "Enables angel_value in final.yaml. The planner considers angel only when known resources are empty, requires missing HP to justify travel (missing >= 2*travel+4), stages adjacent to the point for activation, and keeps the original hp<80 behavior when resources remain. Real DeepSeek tests: S03 HP60/distance6 healed 60->100 and finished first 45.0; S04 HP80/distance12 and T02 HP80/long distance were skipped and finished first 42.5, versus an unguarded long detour that lost rank in an earlier S04 sample. Resource acquisition logic is unchanged. core_test 137/137 and ai_test 14/14 pass."
 }

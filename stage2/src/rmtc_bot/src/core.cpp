@@ -957,7 +957,37 @@ Action Planner::decide(const World &observed) {
     }
   }
   if(stage_==2) for(const auto &e:w.events.items) if(e.end>f.tick) {
-    if(e.kind=="angel" && f.hp<80) for(auto p:e.points) {
+    if(config_.angel_value && e.kind=="angel" && w.resources.empty()) for(auto p:e.points) {
+      int i=p.y*f.width+p.x;
+      if(!std::isfinite(costs[i])) continue;
+      const double missing=std::max(0.0,100.0-f.hp);
+      if(missing<=0) continue;
+      // A long detour just to top up a small amount of HP delays the fortress and
+      // the next objective. Require the missing HP to justify the travel.
+      const int travel=std::max(0,steps[i]-1);
+      if(missing<2.0*travel+4.0) continue;
+      const double potential=std::min(missing,e.number("heal_per_tick",10)*e.number("effect_ticks",10));
+      double reward=potential*.4;
+      if(f.hp<90) reward+=.8;
+      // An already active heal may be refreshed only after it expires; do not
+      // spend a detour merely to re-enter while the effect is still running.
+      if(w.effect("angel",f.team,f.tick)) reward*=.3;
+      // N moves beginning in Tick t enter on t+N-1, not t+N. A point appearing
+      // under a stationary robot does not grant healing.
+      int entry=f.tick+std::max(0,steps[i]-1);
+      if(steps[i]>0 && entry>=e.start && entry<e.end && entry+1<max_ticks_)
+        offer(p,reward,"heal");
+      else if(entry<e.start || p==f.pos) for(auto d:delta) {
+        Pos adjacent=add(p,d);if(!w.inside(adjacent)) continue;
+        int j=adjacent.y*f.width+adjacent.x;
+        if(!std::isfinite(costs[j])) continue;
+        int enter=std::max(e.start,f.tick+steps[j]);
+        if(enter>=e.end || enter+1>=max_ticks_) continue;
+        int wait=enter-(f.tick+steps[j]);
+        offer(adjacent,reward,"heal_stage",wait+1);
+      }
+    }
+    if(!(config_.angel_value && w.resources.empty()) && e.kind=="angel" && f.hp<80) for(auto p:e.points) {
       int i=p.y*f.width+p.x;
       if(!config_.event_timing) {
         if(f.tick+steps[i]>=e.start && f.tick+steps[i]<e.end) offer(p,(100-f.hp)*.045,"heal");
