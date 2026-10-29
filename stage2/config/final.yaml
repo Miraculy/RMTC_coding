@@ -20,6 +20,7 @@
     resource_race_yield: false
     resource_fresh_returns: false
     resource_blocked_recovery: true
+    purity_defense: true
     observation_detour: true
     observation_extra_limit: 2
     observation_attempt_limit: 1

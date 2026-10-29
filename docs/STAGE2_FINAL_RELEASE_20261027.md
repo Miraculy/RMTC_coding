@@ -66,3 +66,7 @@
 
 ## 2026-10-29 更新：v2.2（LLM 时效）
 合入 LLM 事件提交过滤，请求数从 50 降到 17–18，事件解释提前 1–4 Tick；得分/名次未提升，仅作为时效修复。详见 [STAGE2_V2_2_LLM_TIMELINESS_20261029.md](STAGE2_V2_2_LLM_TIMELINESS_20261029.md)。
+
+
+## 2026-10-29 更新：v2.3（洁身自好条件防御）
+合入 purity 事件期间的条件 DEFEND；封闭对照测试中开启后存活、关闭时 Tick 8 阵亡。正常对局未触发，无回归。详见 [STAGE2_V2_3_PURITY_DEFENSE_20261029.md](STAGE2_V2_3_PURITY_DEFENSE_20261029.md)。

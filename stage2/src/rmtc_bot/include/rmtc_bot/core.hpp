@@ -137,6 +137,7 @@ struct PlannerConfig {
   int observation_min_tick{0}; // Do not start an observation before this tick.
   int observation_max_known_resources{99}; // Require at most this many known resource targets.
   bool resource_arrival_value{false}; // Experimental: replace, rather than stack, competition at cumulative arrival.
+  bool purity_defense{false}; // Experimental: offer DEFEND only while the purity event is active.
   bool survival_conditioned_progress{false}; // Experimental: value post-combat progress only in predicted survival branches.
   bool respawn_task_route{false}; // Experimental: use an observed revival to start a higher-rate public task route.
   bool safe_progress_moves{false}; // Experimental: equally short finite-goal steps outside next-Tick fire envelopes.

@@ -50,6 +50,7 @@ public:
     planner_config.observation_min_tick=declare_parameter<int>("observation_min_tick",0);
     planner_config.observation_max_known_resources=declare_parameter<int>("observation_max_known_resources",99);
     planner_config.resource_arrival_value=declare_parameter<bool>("resource_arrival_value",false);
+    planner_config.purity_defense=declare_parameter<bool>("purity_defense",false);
     planner_config.survival_conditioned_progress=declare_parameter<bool>("survival_conditioned_progress",false);
     planner_config.respawn_task_route=declare_parameter<bool>("respawn_task_route",false);
     planner_config.safe_progress_moves=declare_parameter<bool>("safe_progress_moves",false);

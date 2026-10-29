@@ -1756,7 +1756,12 @@ Action Planner::decide(const World &observed) {
     }
   }
   std::vector<Action> actions{{"wait",""}};
-  if(stage_==2) {if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});} // candidate: no defend
+  if(stage_==2) {
+    if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});
+    // Stage two normally removes DEFEND. Re-enable it only while the purity
+    // event is active, where attacking a defender reflects damage.
+    if(config_.purity_defense && w.global("purity",f.tick)) actions.push_back({"defend",""});
+  }
   for(const auto &d:dirs) actions.push_back({"move",d});
   Action best; double best_score=-inf;
   for(const auto &a:actions) {
@@ -1768,6 +1773,7 @@ Action Planner::decide(const World &observed) {
       && a.type=="attack" && probe_directions.count(a.direction);
     const bool probabilistic=uncertain_threats || attack_probe;
     double score=a.type=="wait"?-.3:-.15, received=(attack_probe?probe_incoming:incoming)*vulnerable;
+    if(a.type=="defend" && config_.purity_defense && purity) score+=std::min(1.5,incoming*.03);
     if(pursuit_pause && a.type=="wait") score+=1.2;
     double predicted_attack=0,predicted_reward=0,tempo_bonus=0;
     double movement_utility=0,residence_credit=0;

@@ -45,3 +45,7 @@ python3 tools/verify_stage2_release.py
 
 ## v2.2 发布（2026-10-29）
 LLM 时效补丁：事件话题与 perception 只提交“预告”公告，派生行不再排队。S03/S04 真实 DeepSeek 测试中请求 50→17–18，事件解释从晚 14–142 Tick 变为提前 1–4 Tick；决策改变 383/500、394/500，但得分/名次/R 未提升。详见 docs/STAGE2_V2_2_LLM_TIMELINESS_20261029.md。
+
+
+## v2.3 发布（2026-10-29）
+洁身自好事件期间条件启用 DEFEND：默认关闭，final.yaml 打开。封闭 3×3 测试中，开启后 A 使用 12 次 DEFEND、HP 稳定在 60；关闭时 Tick 8 阵亡。正常 S03/S04 未触发，也没有回归。详见 docs/STAGE2_V2_3_PURITY_DEFENSE_20261029.md。

@@ -470,6 +470,15 @@ TEST(Planner, PurityDefenseAvoidsLethalAttackAndReflection) {
   w.events.merge(batch(f,Json::array({area("purity",10,30,{{"reflection_damage",20}})})),f);
   Planner p;EXPECT_NE(p.decide(w).type,"defend");
 }
+TEST(Planner, PurityDefenseIsOfferedOnlyWhileEventActive) {
+  World w;auto f=frame(10);f.hp=15;f.entities.push_back({"robot","B","B",{9,8},100,0,true,false});w.update(f);
+  w.events.merge(batch(f,Json::array({area("purity",10,30,{{"reflection_damage",20}})})),f);
+  PlannerConfig config;config.purity_defense=true;Planner candidate(2,500,config);
+  EXPECT_EQ(candidate.decide(w).type,"defend");
+  World outside;auto g=frame(10);g.hp=15;g.entities.push_back({"robot","B","B",{9,8},100,0,true,false});outside.update(g);
+  Planner no_event(2,500,config);
+  EXPECT_NE(no_event.decide(outside).type,"defend");
+}
 TEST(Planner, PurityJointActionsNeverAddTheSameCarsAttackAndDefense) {
   for(double hp:{25.0,30.0,35.0}) {
     auto w=purity_trade_world(hp);Planner baseline;
