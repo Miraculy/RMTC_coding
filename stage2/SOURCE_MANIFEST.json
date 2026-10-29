@@ -11,7 +11,7 @@
     "src/rmtc_bot/package.xml": "87001d0e17108b8f3e2b4974ab143c2ae08d3dae8edb089abeff9070c7e011a8",
     "src/rmtc_bot/src/ai.cpp": "612566b19dca4b6045735db43bbb3e15d4f359c79e267a5075593029963d5aa7",
     "src/rmtc_bot/src/core.cpp": "70cd929515fc284a5feefe7784c23749bbc590b02e86c507eca6e0686766fad9",
-    "src/rmtc_bot/src/node.cpp": "efb8cbe8818e56c743681e44d28e9bfd6a4fa94afbf2ceb5a29eb29c3ed55c50",
+    "src/rmtc_bot/src/node.cpp": "316e7dd905d58b291d71e0abe45387bb4c16dfab58af74a6a5460f6d6e5a81d2",
     "src/rmtc_bot/test/ai_test.cpp": "bc3b052654fccb7cdbc13294a85aef81c8bb698339d17db39ddd67e54c21c62f",
     "src/rmtc_bot/test/core_test.cpp": "db32f149755299d03b712cba680c7e270533437a4247c8e2e52ad1d0b318515b",
     "src/rmtc_bot/tools/ai_benchmark.cpp": "e61c8acce9cb0e4564e28c960495d364280b3ec1c7d3f6e5cd8cdd403ab9aa4b",
@@ -73,7 +73,8 @@
       "ai_enabled": true
     }
   },
-  "release": "v2.1-guard-f1",
+  "release": "v2.2-llm-timeliness",
   "v2_change": "stage2 no longer emits defend; opening (tick<40) gives +6 reward to known 20R high-value resources in the team own quadrant. Accepted from local A/B on B1 (12 maps x4 seats) and B2 (8 maps x4 seats): mean rank 2.31->2.17 (B1), 2.56->2.19 (B2); top-two 28->30/48 and 14->20/32; strict first 14->17/48 and 10->13/32; deaths 229->191 and 157->135; D-loss 10080->7755 and 9290->7770; R unchanged within -0.6; defend ticks 4303->0 and 4208->0.",
-  "v2_1_change": "stage2 v2.1 keeps v2 (no defend, own-quadrant 20R opening bonus) and enables the accepted guard+F1 additions from corrected evaluation: observation_detour with extra_limit=2, attempt_limit=1, min_tick=8, max_known_resources=1, and resource_arrival_value. Corrected paired tests vs v2: B1 R 51.76 vs 50.88, score 41.66 vs 40.88, rank 1.853 vs 2.059, top-two 26 vs 23; B2 R 49.38 vs 49.38, score 41.14 vs 40.99, rank 2.062 vs 2.125, top-two 21 vs 20. Behavior changed in 12/34 B1 and 9/32 B2 trajectories; AI-off, mock referee, frozen opponents. R target base+2 was not met; B1 deaths 9.06 vs 8.24 and real-LLM conditions remain unverified."
+  "v2_1_change": "stage2 v2.1 keeps v2 (no defend, own-quadrant 20R opening bonus) and enables the accepted guard+F1 additions from corrected evaluation: observation_detour with extra_limit=2, attempt_limit=1, min_tick=8, max_known_resources=1, and resource_arrival_value. Corrected paired tests vs v2: B1 R 51.76 vs 50.88, score 41.66 vs 40.88, rank 1.853 vs 2.059, top-two 26 vs 23; B2 R 49.38 vs 49.38, score 41.14 vs 40.99, rank 2.062 vs 2.125, top-two 21 vs 20. Behavior changed in 12/34 B1 and 9/32 B2 trajectories; AI-off, mock referee, frozen opponents. R target base+2 was not met; B1 deaths 9.06 vs 8.24 and real-LLM conditions remain unverified.",
+  "v2_2_change": "LLM timeliness only: submit only forecast event notices from both the /referee/event_text topic and perception, instead of every start/hit/effect line. Planner and AI-off behavior are unchanged. On S03/S04 real-DeepSeek runs this reduced AI requests from 50 to 17-18 and moved first event interpretation from 14-142 ticks late to 1-4 ticks before event start; it changed 383/500 and 394/500 A decisions respectively (mostly fortress targeting) but did not change score, rank, R or mission completion in those single games. Merged as a latency/queue fix, not as a score claim."
 }

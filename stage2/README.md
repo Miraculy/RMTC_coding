@@ -41,3 +41,7 @@ python3 tools/verify_stage2_release.py
 - resource_arrival_value=true（到达可获得性替换竞争折扣）。
 
 修正评测（AI 关闭、mock、冻结对手）配对结果：B1 R 50.88→51.76、名次 2.059→1.853、前二 23→26；B2 R 持平 49.38、名次 2.125→2.062、前二 20→21。B1 死亡 8.24→9.06；R ≥ base+2 未达成，真实 LLM 条件未验证。详见 docs/STAGE2_V2_1_GUARD_F1_ACCEPTANCE_20261029.md。
+
+
+## v2.2 发布（2026-10-29）
+LLM 时效补丁：事件话题与 perception 只提交“预告”公告，派生行不再排队。S03/S04 真实 DeepSeek 测试中请求 50→17–18，事件解释从晚 14–142 Tick 变为提前 1–4 Tick；决策改变 383/500、394/500，但得分/名次/R 未提升。详见 docs/STAGE2_V2_2_LLM_TIMELINESS_20261029.md。

@@ -62,3 +62,7 @@
 
 ## 2026-10-29 更新：v2.1（guard+F1）
 用户要求将 guard+F1 候选并入正式包。已启用 observation_detour 与 resource_arrival_value 参数，构建/测试/清单校验通过；R 在 B1 +0.88、B2 持平，未达 base+2；详见 [STAGE2_V2_1_GUARD_F1_ACCEPTANCE_20261029.md](STAGE2_V2_1_GUARD_F1_ACCEPTANCE_20261029.md)。
+
+
+## 2026-10-29 更新：v2.2（LLM 时效）
+合入 LLM 事件提交过滤，请求数从 50 降到 17–18，事件解释提前 1–4 Tick；得分/名次未提升，仅作为时效修复。详见 [STAGE2_V2_2_LLM_TIMELINESS_20261029.md](STAGE2_V2_2_LLM_TIMELINESS_20261029.md)。

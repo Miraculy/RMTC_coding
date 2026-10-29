@@ -106,7 +106,11 @@ public:
       [this](std_msgs::msg::String::ConstSharedPtr msg){mission_text_=msg->data.substr(0,32768);});
     notices_=create_subscription<std_msgs::msg::String>("/referee/event_text",rclcpp::QoS(128).reliable().transient_local(),
       [this](std_msgs::msg::String::ConstSharedPtr msg){
-        if(ai_ && !world_.history.empty() && msg->data.size()<=131072)
+        // Timeliness: only forecast notices introduce a new event fact. Start/
+        // hit/effect lines are derived updates; submitting them creates queue
+        // latency without adding information.
+        if(ai_ && !world_.history.empty() && msg->data.size()<=131072
+           && msg->data.find("预告")!=std::string::npos)
           ai_->submit(world_.current,world_.events,msg->data,"topic");
       });
     registry_=create_subscription<std_msgs::msg::String>("/referee/team_registry",retained,
@@ -234,8 +238,10 @@ private:
         // The public protocol separates recent announcements with newlines.
         // Submit each raw notice once, instead of reinterpreting every growing
         // history batch. Meaning and parameters remain exclusively LLM output.
+        // Timeliness: submit only forecast notices. Exact duplicate lines are
+        // still removed by the AI client's byte-level dedupe.
         std::istringstream notices(f.event_text);std::string notice;
-        while(std::getline(notices,notice)) if(!notice.empty())
+        while(std::getline(notices,notice)) if(!notice.empty() && notice.find("预告")!=std::string::npos)
           ai_->submit(f,world_.events,notice,"perception");
         if(!ai_success_ && f.tick-qualification_tick_>=20) {
           if(ai_->submit(f,world_.events,mission_text_,"mission",true))qualification_tick_=f.tick;
