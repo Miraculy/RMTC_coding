@@ -459,16 +459,16 @@ Action Planner::decide(const World &observed) {
   }
   const World &w=without_interpretation?*without_interpretation:observed;
   const auto &f=w.current; reason="wait";goal_reason.clear();purity_evaluations=Json::array();opening_route_evaluation=Json();resource_route_evaluation=Json();resource_race_evaluations=Json::array();resource_recovery_evaluation=Json();
-  observation_evaluation=Json();
+  observation_evaluation=Json();movement_recovery_evaluation=Json();
   if(observation_session_!=f.session) {
     observation_session_=f.session;observation_plan_={};observation_attempts_.clear();
   }
-  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();resource_feedback_={};return {};}
+  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();resource_feedback_={};movement_feedback_={};return {};}
   for(const auto &e:w.events.items) if(e.kind=="world_split" && e.start==f.tick && w.split_line(f.pos,e)) {
-    reason="forced_respawn"; return {};
+    movement_feedback_={};reason="forced_respawn"; return {};
   }
   const double hp=f.hp-w.environmental_damage(f.pos,f.tick,f.protected_spawn);
-  if(hp<=0) {reason="pre_combat_event_death";return {};}
+  if(hp<=0) {movement_feedback_={};reason="pre_combat_event_death";return {};}
   std::map<int,double> unavoidable_event_damage;
   auto event_cost=[&](Pos p,int tick,bool protected_spawn) {
     double damage=w.environmental_damage(p,tick,protected_spawn);
@@ -483,6 +483,65 @@ Action Planner::decide(const World &observed) {
   };
   const bool forecast=config_.tactical_forecast && stage_==2
     && f.tick>=(config_.forecast_start_tick<0?max_ticks_/5:config_.forecast_start_tick);
+  const bool movement_recovery=config_.movement_blocked_recovery && stage_==2;
+  auto &movement=movement_feedback_;
+  if(!movement_recovery) movement={};
+  else {
+    if(movement.session!=f.session || f.tick<movement.processed_tick
+      || (movement.processed_tick!=f.tick && movement.proposed_tick!=f.tick-1)) movement={};
+    movement.session=f.session;
+    // An interpretation arriving after this Tick's first decision may change
+    // the physical direction of already-consumed receipts. Revoke that evidence
+    // even on a same-Tick replan, without consuming the receipt for a second time.
+    if(std::any_of(movement.receipt_reversals.begin(),movement.receipt_reversals.end(),[&](const auto &evidence) {
+      return evidence.second!=w.effect("illusion",f.team,evidence.first);
+    })) {
+      movement.cooldowns.clear();movement.failures=0;movement.failed_edge.reset();
+      movement.receipt_reversals.clear();movement.receipt_status="event_reinterpreted";
+    }
+    // A same-Tick event revision may replan, but must not count its receipt twice.
+    if(movement.processed_tick!=f.tick) {
+      const bool contiguous=movement.proposed_tick>=0 && movement.proposed_tick==f.tick-1 && f.action_tick==f.tick-1;
+      const bool consistent=contiguous && !movement.ambiguous
+        && movement.reversed==w.effect("illusion",f.team,f.tick-1);
+      const bool failed=consistent && movement.action.type=="move" && f.action_type=="move"
+        && !f.moved && f.action_error=="E_BLOCKED" && f.pos==movement.from && movement.entry;
+      movement.receipt_status.clear();
+      if(!contiguous) {
+        movement.cooldowns.clear();movement.failures=0;movement.failed_edge.reset();
+      } else if(failed) {
+        movement.receipt_reversals.emplace_back(movement.proposed_tick,movement.reversed);
+        const auto edge=std::make_pair(movement.from,*movement.entry);
+        movement.failures=movement.failed_edge==edge?movement.failures+1:1;
+        movement.failed_edge=edge;movement.receipt_status="blocked_once";
+        if(movement.failures>=2) {
+          // Geometry staggers retry times without team/seed-specific policy.
+          // Only fresh failed receipts start a cooldown; waiting never extends it.
+          const int until=f.tick+4+(f.pos.x+2*f.pos.y)%3;
+          auto it=movement.cooldowns.find(edge);
+          if(it==movement.cooldowns.end() || it->second<=f.tick) movement.cooldowns[edge]=until;
+          movement.receipt_status="edge_cooled";
+        }
+      } else {
+        movement.failures=0;movement.failed_edge.reset();
+        const bool successful=consistent && movement.action.type=="move" && f.action_type=="move"
+          && f.moved && f.action_error.empty() && movement.entry && f.pos==*movement.entry;
+        if(successful) movement.cooldowns.erase(std::make_pair(movement.from,*movement.entry));
+        // Unexplained displacement (including revival) invalidates local routing feedback.
+        else if(f.pos!=movement.from) movement.cooldowns.clear();
+        if(!consistent) {
+          movement.receipt_status="ambiguous_receipt";
+          movement.cooldowns.clear();
+        }
+      }
+      movement.processed_tick=f.tick;
+    }
+    for(auto it=movement.cooldowns.begin();it!=movement.cooldowns.end();)
+      if(it->second<=f.tick) it=movement.cooldowns.erase(it); else ++it;
+    // Two receipts plus the longest six-Tick cooldown fit in this window.
+    while(!movement.receipt_reversals.empty() && movement.receipt_reversals.front().first<f.tick-8)
+      movement.receipt_reversals.pop_front();
+  }
   const bool resource_recovery=config_.resource_blocked_recovery && stage_==2 && f.tick<max_ticks_/5
     && !forecast && !config_.resource_beam && !config_.information_paths
     && !config_.opening_route_information && !config_.resource_route_pickups
@@ -551,6 +610,33 @@ Action Planner::decide(const World &observed) {
       }
     }
   }
+  auto cooled_edge=[&](Pos from,Pos to,int tick) {
+    auto it=movement.cooldowns.find(std::make_pair(from,to));
+    return it!=movement.cooldowns.end() && tick<it->second;
+  };
+  // Do not let a routing cooldown remove the only known nonlethal event exit.
+  // The normal combat/event scoring still decides whether to take that move.
+  auto exit_damage=[&](Pos p,bool protected_spawn) {
+    if(!escape_damage.empty() && !protected_spawn) return escape_damage[p.y*f.width+p.x];
+    return w.environmental_damage(p,f.tick+1,protected_spawn);
+  };
+  std::set<Pos> emergency_entries;
+  auto update_emergency_entries=[&](double surviving_hp) {
+    emergency_entries.clear();
+    if(movement.cooldowns.empty() || surviving_hp<=0 || exit_damage(f.pos,f.protected_spawn)<surviving_hp) return;
+    std::vector<Pos> exits;bool open_exit=false;
+    for(auto d:delta) {
+      Pos q=add(f.pos,d);
+      if(!w.visible(q) || w.blocked(q,f.tick) || w.blocked(q,f.tick+1) || w.occupied(q)
+        || exit_damage(q,false)>=surviving_hp) continue;
+      if(cooled_edge(f.pos,q,f.tick)) exits.push_back(q); else open_exit=true;
+    }
+    if(!open_exit) emergency_entries.insert(exits.begin(),exits.end());
+  };
+  update_emergency_entries(hp);
+  auto avoid_edge=[&](Pos from,Pos to,int tick) {
+    return !(from==f.pos && tick==f.tick && emergency_entries.count(to)) && cooled_edge(from,to,tick);
+  };
   std::map<std::string,Pos> velocity;
   if(forecast && w.history.size()>1) {
     const auto &previous=w.history[w.history.size()-2];
@@ -614,7 +700,8 @@ Action Planner::decide(const World &observed) {
       // Current occupancy forbids the next action. Beyond that first step,
       // allow a delayed route through an observed robot's cell as a hypothesis;
       // replan from the next perception before actually entering it.
-      if(w.blocked(q,arrival-1) || (occupied && (index==root || stage_!=2 || !config_.transient_occupancy))) continue;
+      if(w.blocked(q,arrival-1) || avoid_edge(p,q,arrival-1)
+        || (occupied && (index==root || stage_!=2 || !config_.transient_occupancy))) continue;
       int next=q.y*f.width+q.x;
       double extra=1+(w.explored.count(q)?0:.35)+(occupied?1.0:0.0);
       if(index==root) extra-=first_information[d];
@@ -1634,6 +1721,9 @@ Action Planner::decide(const World &observed) {
   if(uncertain_threats) {ordinary_risk=outcomes(false);guarded_risk=outcomes(true);}
   if(!probe_directions.empty()) probe_risk=outcomes(false,true);
   const double vulnerable=w.effect("pan",f.team,f.tick)?w.effect_number("pan",f.team,f.tick,"damage_multiplier",2):1;
+  // Movement resolves after this Tick's combat, so a survivable event at full
+  // HP may become lethal after the already-visible incoming damage.
+  update_emergency_entries(hp-incoming*vulnerable);
   const Entity *purity_enemy=nullptr;
   if(config_.purity_joint_actions && config_.score_aware_combat && stage_==2 && purity
     && !forecast && !f.protected_spawn
@@ -1653,7 +1743,7 @@ Action Planner::decide(const World &observed) {
     }
   }
   bool available_finisher=false;
-  if((config_.productive_escape || config_.safe_progress_moves || resource_recovery) && !f.protected_spawn) for(const auto &enemy:f.entities)
+  if((config_.productive_escape || config_.safe_progress_moves || resource_recovery || movement_recovery) && !f.protected_spawn) for(const auto &enemy:f.entities)
     if(enemy.type=="robot" && !enemy.protected_spawn) {
       int radius=static_cast<int>(w.effect_number("unrivaled",f.team,f.tick,"attack_radius",2));
       bool reachable=self_unrivaled?std::max(std::abs(enemy.pos.x-f.pos.x),std::abs(enemy.pos.y-f.pos.y))<=radius
@@ -1686,7 +1776,8 @@ Action Planner::decide(const World &observed) {
         if(length[index]>=2*f.radius) continue;
         for(int d=0;d<4;++d) {
           Pos q=add(p,delta[d]);
-          if(!w.visible(q) || w.blocked(q,f.tick) || w.occupied(q) || (blocked && q==*blocked)) continue;
+          if(!w.visible(q) || w.blocked(q,f.tick) || w.occupied(q) || avoid_edge(p,q,f.tick+length[index])
+            || (blocked && q==*blocked)) continue;
           int next=q.y*f.width+q.x;if(length[next]>=0) continue;
           length[next]=length[index]+1;route_first[next]=index==root?d:route_first[index];frontier[write++]=next;
         }
@@ -1785,6 +1876,35 @@ Action Planner::decide(const World &observed) {
       preferred=best;
     }
   }
+  // Alternative planners may have replaced the first step after the main route
+  // search. Repair a cooled first step locally without inventing a new goal.
+  int recovery_direction=-1;
+  const bool cooled_here=std::any_of(delta.begin(),delta.end(),[&](Pos d) {
+    return avoid_edge(f.pos,add(f.pos,d),f.tick);
+  });
+  if(cooled_here && !available_finisher && hp>incoming*vulnerable && !(goal && *goal==f.pos)) {
+    auto safe_step=[&](int d) {
+      Pos p=add(f.pos,delta[d]);
+      return w.visible(p) && !w.blocked(p,f.tick) && !w.blocked(p,f.tick+1) && !w.occupied(p)
+        && !avoid_edge(f.pos,p,f.tick) && exit_damage(p,false)<hp-incoming*vulnerable;
+    };
+    if(preferred>=0 && safe_step(preferred)) recovery_direction=preferred;
+    else {
+      double best_retreat=-inf;
+      for(int d=0;d<4;++d) if(safe_step(d)) {
+        Pos p=add(f.pos,delta[d]);double value=0;
+        if(goal) value+=.15*(distance(f.pos,*goal)-distance(p,*goal));
+        auto visit=w.visits.find(p);if(visit!=w.visits.end()) value-=std::min(1.0,visit->second*.05);
+        for(auto step:delta) {
+          Pos q=add(p,step);
+          if(q!=f.pos && w.visible(q) && !w.blocked(q,f.tick+1) && !w.occupied(q)
+            && !avoid_edge(p,q,f.tick+1)) value+=.1;
+        }
+        if(value>best_retreat) {best_retreat=value;recovery_direction=d;}
+      }
+      if(recovery_direction>=0) preferred=recovery_direction;
+    }
+  }
   std::vector<Action> actions{{"wait",""}};
   if(stage_==2) {
     if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});
@@ -1813,13 +1933,17 @@ Action Planner::decide(const World &observed) {
     Pos end=f.pos; int actual=-1;
     if(a.type=="move") {
       int command=std::find(dirs.begin(),dirs.end(),a.direction)-dirs.begin();actual=reverse?(command^1):command;
-      end=add(f.pos,delta[actual]);if(w.blocked(end,f.tick) || w.occupied(end)) continue;
+      end=add(f.pos,delta[actual]);
+      if(w.blocked(end,f.tick) || w.occupied(end) || avoid_edge(f.pos,end,f.tick)) continue;
       // Keep action selection connected to the value of the chosen plan.
       double plan_bonus=(goal_type=="engage" || goal_type=="ambush")?.6:std::clamp(best_goal,.7,2.5);
       if(stage_==2 && (goal_type=="resource" || goal_type=="explore")
         && f.tick<max_ticks_/5 && w.explored.size()<static_cast<size_t>(size*.75))
         plan_bonus*=config_.early_movement_scale;
       score=.1+(actual==preferred?plan_bonus:0);
+      // A bounded nudge can overcome the recent-visit cost of stepping back.
+      // It does not bypass combat, purity defense, or the event-risk evaluation.
+      if(actual==recovery_direction) score+=.8;
       if(config_.productive_escape && stage_==2 && f.tick<max_ticks_/5
         && (goal_type=="resource" || goal_type=="explore") && actual==preferred
         && !f.protected_spawn && !available_finisher && incoming*vulnerable>0 && incoming*vulnerable<hp) {
@@ -2135,8 +2259,35 @@ Action Planner::decide(const World &observed) {
     if(score>best_score) {best_score=score;best=a;}
   }
   reason=goal_type;
+  if(best.type=="move" && recovery_direction>=0) {
+    int command=std::find(dirs.begin(),dirs.end(),best.direction)-dirs.begin();
+    if((reverse?(command^1):command)==recovery_direction) reason="contention_detour";
+  }
   if(best.type=="attack" || best.type=="defend") reason="combat";
   if(!legal(best,f,stage_)) return {};
+  if(movement_recovery) {
+    std::optional<Pos> entry;
+    if(best.type=="move") {
+      int command=std::find(dirs.begin(),dirs.end(),best.direction)-dirs.begin();
+      entry=add(f.pos,delta[reverse?(command^1):command]);
+    }
+    const bool same_tick=movement.proposed_tick==f.tick;
+    // Receipts contain no direction. A changed same-Tick proposal cannot be
+    // attributed safely to one of the submissions, even if it later changes back.
+    movement.ambiguous=same_tick && (movement.ambiguous || movement.action.type!=best.type
+      || movement.action.direction!=best.direction || movement.entry!=entry || movement.from!=f.pos);
+    movement.proposed_tick=f.tick;movement.from=f.pos;movement.action=best;
+    movement.entry=entry;movement.reversed=reverse;
+    if(!movement.cooldowns.empty() || !movement.receipt_status.empty() || movement.ambiguous) {
+      Json edges=Json::array();
+      for(const auto &[edge,until]:movement.cooldowns) edges.push_back({
+        {"from",{edge.first.x,edge.first.y}},{"to",{edge.second.x,edge.second.y}},{"until_tick",until}});
+      movement_recovery_evaluation={{"status",movement.receipt_status},{"failed_receipts",movement.failures},
+        {"cooldown_edges",edges},{"event_escape_retry",!emergency_entries.empty()},{"proposal_ambiguous",movement.ambiguous},
+        {"preferred_effective_direction",recovery_direction>=0?Json(dirs[recovery_direction]):Json()},
+        {"proposed_entry",entry?Json::array({entry->x,entry->y}):Json()},{"obstacle_inferred",false}};
+    }
+  }
   if(resource_recovery) {
     feedback.proposed_tick=f.tick;feedback.from=f.pos;feedback.action=best;feedback.proposed_entry.reset();
     if(best.type=="move" && goal && goal_type=="resource" && distance(f.pos,*goal)==1) {

@@ -44,6 +44,7 @@ public:
     planner_config.resource_race_yield=declare_parameter<bool>("resource_race_yield",false);
     planner_config.resource_fresh_returns=declare_parameter<bool>("resource_fresh_returns",false);
     planner_config.resource_blocked_recovery=declare_parameter<bool>("resource_blocked_recovery",false);
+    planner_config.movement_blocked_recovery=declare_parameter<bool>("movement_blocked_recovery",false);
     planner_config.observation_detour=declare_parameter<bool>("observation_detour",false);
     planner_config.observation_extra_limit=declare_parameter<int>("observation_extra_limit",2);
     planner_config.observation_attempt_limit=declare_parameter<int>("observation_attempt_limit",99);
@@ -160,6 +161,9 @@ private:
       {"revision",true},{"selected",action.json(f)},{"estimates",planner_->resource_race_evaluations}});
     if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
       {"revision",true},{"selected",action.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
+    if(!planner_->movement_recovery_evaluation.is_null()) record({{"kind","movement_recovery_evaluation"},
+      {"session_id",f.session},{"tick",f.tick},{"revision",true},
+      {"selected",action.json(f)},{"estimate",planner_->movement_recovery_evaluation}});
   }
   void collect_ai(bool allow_revision=true) {
     if(!ai_)return;
@@ -275,6 +279,8 @@ private:
         {"selected",a.json(f)},{"estimates",planner_->resource_race_evaluations}});
       if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
         {"selected",a.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
+      if(!planner_->movement_recovery_evaluation.is_null()) record({{"kind","movement_recovery_evaluation"},
+        {"session_id",f.session},{"tick",f.tick},{"selected",a.json(f)},{"estimate",planner_->movement_recovery_evaluation}});
       if(!planner_->observation_evaluation.is_null()) record({{"kind","observation_evaluation"},
         {"session_id",f.session},{"tick",f.tick},{"selected",a.json(f)},{"estimate",planner_->observation_evaluation}});
       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},

@@ -1,4 +1,4 @@
-# Ranking release: frozen 17af strategy, only blocked recovery enabled.
+# Candidate on v2.4: enable generic movement recovery; not built or tested yet.
 /**:
   ros__parameters:
     early_movement_scale: 1.0
@@ -20,6 +20,7 @@
     resource_race_yield: false
     resource_fresh_returns: false
     resource_blocked_recovery: true
+    movement_blocked_recovery: true
     purity_defense: true
     angel_value: true
     observation_detour: true

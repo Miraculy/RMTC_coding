@@ -1,0 +1,439 @@
+diff --git a/stage2/README.md b/stage2/README.md
+index 357e8da..95af147 100644
+--- a/stage2/README.md
++++ b/stage2/README.md
+@@ -1,6 +1,8 @@
+ # 二阶段排名导向发布版
+ 
+-本目录固定完整17af源码和B1参数。C++源码逐文件等同于仓库提交 `f049728` 中的 `src/rmtc_bot`；运行时只将 `resource_blocked_recovery` 从原默认false改为true。其余规划、事件和修订开关在 `config/final.yaml` 中明确固定。源码及参数校验值见 `SOURCE_MANIFEST.json`。
++当前工作树为基于 `4d632d3`（v2.4）的**通用争格脱困源码候选 v1**，在 `config/final.yaml` 启用 `movement_blocked_recovery`。同一移动边连续两次收到匹配的本车 `E_BLOCKED` 后，短暂冷却该边并重算路径；保留事件解释时效、guard+F1、纯净防御和天使利用改动。详见[实现说明](../docs/STAGE2_CONTENTION_RECOVERY_V1_20261029.md)。按本轮用户要求，未编译、未运行测试或比赛，安装目录尚未更新，不能据此宣称脱困或增分已经验证。
++
++首版来源为17af源码和B1参数，曾逐文件等同于提交 `f049728` 中的 `src/rmtc_bot`；后续版本沿革见下文，当前源码已不再逐字节等同该祖先提交。当前源码及配置校验值在 `SOURCE_MANIFEST.json`，其中历史二进制哈希不代表本轮候选构建。
+ 
+ 从仓库根构建并运行：
+ 
+@@ -10,7 +12,7 @@
+ ./run_contestant.sh A 2
+ ```
+ 
+-也可直接运行 `./run_stage2_final.sh A`。脚本使用仓库相对位置寻找自己的安装产物，不依赖维护者绝对路径；后置ROS参数可显式覆盖配置。源码复制自已验证版本，未合入探索候选或一阶段算法。
++也可在构建后运行 `./run_stage2_final.sh A`。脚本使用仓库相对位置寻找自己的安装产物，不依赖维护者绝对路径；后置ROS参数可显式覆盖配置。当前源码候选须先构建才会被入口使用；关闭新功能可传入 `-p movement_blocked_recovery:=false`。
+ 
+ 需要 Ubuntu 22.04、ROS 2 Humble、colcon、nlohmann-json3-dev、libcurl4-openssl-dev，完整安装说明见根README。非系统位置的依赖可通过CMake参数指定，例如 `./build_stage2.sh -Dnlohmann_json_DIR=/依赖前缀/lib/cmake/nlohmann_json`；仓库不写死本机依赖目录。
+ 
+diff --git a/stage2/SOURCE_MANIFEST.json b/stage2/SOURCE_MANIFEST.json
+index 8ca7c09..d3a1865 100644
+--- a/stage2/SOURCE_MANIFEST.json
++++ b/stage2/SOURCE_MANIFEST.json
+@@ -2,16 +2,16 @@
+   "schema": 1,
+   "source_commit": "f049728cf3725a14ab56e307cbeaf3476571f92f",
+   "historical_binary_sha256": "17af71e3389cbdb6478a959e391b0aa462d04fbcc5341846e1d8885c1cea4a8c",
+-  "selection": "B1: baseline defaults plus resource_blocked_recovery=true",
++  "selection": "Source candidate on v2.4: movement_blocked_recovery=true; all previous profile values retained",
+   "files": {
+     "src/rmtc_bot/CMakeLists.txt": "726f348ba342b03feb8b1e50720d0f793810c21f07db6635776c6aead77bcf09",
+     "src/rmtc_bot/config/contestant.yaml": "75c6fb59b16d294ebd956448f3f974d0b10d57c67421b8ed687f6d39360afbd6",
+     "src/rmtc_bot/include/rmtc_bot/ai.hpp": "8c9591b122c4b7fa61387f4a4460acfa69a94af0a93c569323ea2307860f12bb",
+-    "src/rmtc_bot/include/rmtc_bot/core.hpp": "0e33c58d2cacab9763719c1b1cfe643a110783cb1215779f866b43d9b5b934bd",
++    "src/rmtc_bot/include/rmtc_bot/core.hpp": "416b01416b8ff875088fcbe1de15822c338b0bf67e23ad8a909c2741b5408252",
+     "src/rmtc_bot/package.xml": "87001d0e17108b8f3e2b4974ab143c2ae08d3dae8edb089abeff9070c7e011a8",
+     "src/rmtc_bot/src/ai.cpp": "612566b19dca4b6045735db43bbb3e15d4f359c79e267a5075593029963d5aa7",
+-    "src/rmtc_bot/src/core.cpp": "299f3ad1028c55951deea6b9b832656eba17635d65a2ff472bd4d50a0efd1990",
+-    "src/rmtc_bot/src/node.cpp": "48fa1a95dde99e4f2ab5a44233c65af5f2e86a875739311e657f9346ea85cd2f",
++    "src/rmtc_bot/src/core.cpp": "8d26531d26041820d9e98c614a824bffa33ec9d4fe14c4085242e3bbf335a11e",
++    "src/rmtc_bot/src/node.cpp": "12af62a50932ba8cd984251eeaa57daee96d79b30cb323368a08aed5d11a5e6a",
+     "src/rmtc_bot/test/ai_test.cpp": "bc3b052654fccb7cdbc13294a85aef81c8bb698339d17db39ddd67e54c21c62f",
+     "src/rmtc_bot/test/core_test.cpp": "ad0e8c510fcc18389f120aec2b326bb9acd2e509c60663549675f5f799f1f23d",
+     "src/rmtc_bot/tools/ai_benchmark.cpp": "e61c8acce9cb0e4564e28c960495d364280b3ec1c7d3f6e5cd8cdd403ab9aa4b",
+@@ -19,7 +19,7 @@
+   },
+   "profile": {
+     "path": "config/final.yaml",
+-    "sha256": "2fbc98ca1d3789e5ed0b6c7693dc1524686da60ac9457849164bad865a65dea6",
++    "sha256": "a6c8bc5ee5be68f6f09b9756f535c0b0de4885d1fe8ae4c70a53016974a69d33",
+     "parameters": {
+       "early_movement_scale": 1.0,
+       "early_damage_scale": 1.0,
+@@ -40,6 +40,7 @@
+       "resource_race_yield": false,
+       "resource_fresh_returns": false,
+       "resource_blocked_recovery": true,
++      "movement_blocked_recovery": true,
+       "purity_defense": true,
+       "angel_value": true,
+       "observation_detour": true,
+@@ -75,10 +76,21 @@
+       "ai_enabled": true
+     }
+   },
+-  "release": "v2.4-angel-value",
++  "release": "v2.5-movement-recovery-candidate-v1",
+   "v2_change": "stage2 no longer emits defend; opening (tick<40) gives +6 reward to known 20R high-value resources in the team own quadrant. Accepted from local A/B on B1 (12 maps x4 seats) and B2 (8 maps x4 seats): mean rank 2.31->2.17 (B1), 2.56->2.19 (B2); top-two 28->30/48 and 14->20/32; strict first 14->17/48 and 10->13/32; deaths 229->191 and 157->135; D-loss 10080->7755 and 9290->7770; R unchanged within -0.6; defend ticks 4303->0 and 4208->0.",
+   "v2_1_change": "stage2 v2.1 keeps v2 (no defend, own-quadrant 20R opening bonus) and enables the accepted guard+F1 additions from corrected evaluation: observation_detour with extra_limit=2, attempt_limit=1, min_tick=8, max_known_resources=1, and resource_arrival_value. Corrected paired tests vs v2: B1 R 51.76 vs 50.88, score 41.66 vs 40.88, rank 1.853 vs 2.059, top-two 26 vs 23; B2 R 49.38 vs 49.38, score 41.14 vs 40.99, rank 2.062 vs 2.125, top-two 21 vs 20. Behavior changed in 12/34 B1 and 9/32 B2 trajectories; AI-off, mock referee, frozen opponents. R target base+2 was not met; B1 deaths 9.06 vs 8.24 and real-LLM conditions remain unverified.",
+   "v2_2_change": "LLM timeliness only: submit only forecast event notices from both the /referee/event_text topic and perception, instead of every start/hit/effect line. Planner and AI-off behavior are unchanged. On S03/S04 real-DeepSeek runs this reduced AI requests from 50 to 17-18 and moved first event interpretation from 14-142 ticks late to 1-4 ticks before event start; it changed 383/500 and 394/500 A decisions respectively (mostly fortress targeting) but did not change score, rank, R or mission completion in those single games. Merged as a latency/queue fix, not as a score claim.",
+   "v2_3_change": "Adds purity_defense=false by default; final.yaml enables it. Stage two normally excludes DEFEND; this candidate adds DEFEND only while the purity event is active, and values the incoming-threat branch. An enclosed 3x3 test arena with adjacent practice bots and purity from tick 1 produced 12 DEFEND actions and stable HP 60 when enabled, versus death at tick 8 when disabled. Normal S03/S04 real-DeepSeek games never selected DEFEND because A was not attacked during the purity window; no resource logic, planner target logic, or no-defend behavior outside the event changed. core_test 137/137 and ai_test 14/14 pass.",
+-  "v2_4_change": "Enables angel_value in final.yaml. The planner considers angel only when known resources are empty, requires missing HP to justify travel (missing >= 2*travel+4), stages adjacent to the point for activation, and keeps the original hp<80 behavior when resources remain. Real DeepSeek tests: S03 HP60/distance6 healed 60->100 and finished first 45.0; S04 HP80/distance12 and T02 HP80/long distance were skipped and finished first 42.5, versus an unguarded long detour that lost rank in an earlier S04 sample. Resource acquisition logic is unchanged. core_test 137/137 and ai_test 14/14 pass."
++  "v2_4_change": "Enables angel_value in final.yaml. The planner considers angel only when known resources are empty, requires missing HP to justify travel (missing >= 2*travel+4), stages adjacent to the point for activation, and keeps the original hp<80 behavior when resources remain. Real DeepSeek tests: S03 HP60/distance6 healed 60->100 and finished first 45.0; S04 HP80/distance12 and T02 HP80/long distance were skipped and finished first 42.5, versus an unguarded long detour that lost rank in an earlier S04 sample. Resource acquisition logic is unchanged. core_test 137/137 and ai_test 14/14 pass.",
++  "source_commit_role": "Historical 17af ancestry only; candidate_base_commit identifies this candidate base, not a built artifact",
++  "candidate_base_commit": "4d632d39c8e60610a761cf0e2e9a71c00b3176ad",
++  "candidate_validation": {
++    "status": "source_only_unbuilt_untested",
++    "build_performed": false,
++    "tests_performed": false,
++    "matches_started": 0,
++    "installed_binary_updated": false,
++    "reason": "User requested one implementation version without tests"
++  },
++  "v2_5_change": "Adds movement_blocked_recovery=false by default, enabled in the candidate final.yaml. Two matched consecutive own E_BLOCKED receipts on the same directed edge trigger a 4-6 Tick cooldown, path replanning and a bounded retreat preference under existing combat/event scoring. Same-Tick ambiguous proposals and reinterpreted illusion evidence are discarded; specific event exits can bypass cooldown after accounting for current incoming damage. No build or test run; no claimed score/resource/ranking improvement."
+ }
+diff --git a/stage2/config/final.yaml b/stage2/config/final.yaml
+index 05b6c9a..6ec6602 100644
+--- a/stage2/config/final.yaml
++++ b/stage2/config/final.yaml
+@@ -1,4 +1,4 @@
+-# Ranking release: frozen 17af strategy, only blocked recovery enabled.
++# Candidate on v2.4: enable generic movement recovery; not built or tested yet.
+ /**:
+   ros__parameters:
+     early_movement_scale: 1.0
+@@ -20,6 +20,7 @@
+     resource_race_yield: false
+     resource_fresh_returns: false
+     resource_blocked_recovery: true
++    movement_blocked_recovery: true
+     purity_defense: true
+     angel_value: true
+     observation_detour: true
+diff --git a/stage2/src/rmtc_bot/include/rmtc_bot/core.hpp b/stage2/src/rmtc_bot/include/rmtc_bot/core.hpp
+index 1eb2546..baa06c0 100644
+--- a/stage2/src/rmtc_bot/include/rmtc_bot/core.hpp
++++ b/stage2/src/rmtc_bot/include/rmtc_bot/core.hpp
+@@ -131,6 +131,7 @@ struct PlannerConfig {
+   bool resource_race_yield{false}; // Experimental: discount a fresh resource a visibly approaching rival can enter first.
+   bool resource_fresh_returns{false}; // Experimental: keep full value for a currently visible resource toward our start.
+   bool resource_blocked_recovery{false}; // Experimental: leave a repeatedly failed entry for a visible alternative.
++  bool movement_blocked_recovery{false}; // Candidate: temporary directed-edge cooldown after repeated own E_BLOCKED.
+   bool observation_detour{false}; // Experimental: known-path observation with a bounded return to a real resource.
+   int observation_extra_limit{2}; // Max extra steps for the observation detour.
+   int observation_attempt_limit{99}; // Max distinct goals used for observation per game.
+@@ -166,7 +167,7 @@ class Planner {
+ public:
+   explicit Planner(int stage=2, int max_ticks=500, PlannerConfig config={});
+   Action decide(const World &w);
+-  void reset() { target_.reset(); target_type_.clear(); recovery_mission_.reset(); resource_feedback_={}; observation_plan_={}; observation_attempts_.clear(); observation_session_.clear(); observation_evaluation=Json(); goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); resource_route_evaluation=Json(); resource_race_evaluations=Json::array(); resource_recovery_evaluation=Json(); reason = "reset"; }
++  void reset() { target_.reset(); target_type_.clear(); recovery_mission_.reset(); resource_feedback_={}; movement_feedback_={}; observation_plan_={}; observation_attempts_.clear(); observation_session_.clear(); observation_evaluation=Json(); goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); resource_route_evaluation=Json(); resource_race_evaluations=Json::array(); resource_recovery_evaluation=Json(); movement_recovery_evaluation=Json(); reason = "reset"; }
+   std::string reason;
+   std::string goal_reason; // Selected goal before an immediate combat action overrides reason.
+   Json purity_evaluations=Json::array(); // Local estimates only; never fed back as observations.
+@@ -174,6 +175,7 @@ public:
+   Json resource_route_evaluation; // Proposed incidental pickup; execution and collection require later perception.
+   Json resource_race_evaluations=Json::array(); // Observed approach and heuristic value discount, not a future enemy action.
+   Json resource_recovery_evaluation; // Failed-entry evidence and a bounded alternative, never a confirmed pickup.
++  Json movement_recovery_evaluation; // Own matched receipts and temporary routing constraints, never obstacle facts.
+   Json observation_evaluation;
+   std::optional<Pos> target() const {return target_;}
+ private:
+@@ -196,5 +198,16 @@ private:
+     Action action;
+     std::optional<Pos> proposed_entry, failed_entry, blocked_entry, alternative;
+   } resource_feedback_;
++  struct MovementFeedback {
++    std::string session, receipt_status;
++    int processed_tick{-1}, proposed_tick{-1}, failures{};
++    Pos from;
++    Action action;
++    bool reversed{}, ambiguous{};
++    std::optional<Pos> entry;
++    std::optional<std::pair<Pos,Pos>> failed_edge;
++    std::map<std::pair<Pos,Pos>,int> cooldowns; // Exclusive expiry Tick; not a map obstacle.
++    std::deque<std::pair<int,bool>> receipt_reversals; // Recent consumed evidence, including same-Tick replans.
++  } movement_feedback_;
+ };
+ } // namespace rmtc
+diff --git a/stage2/src/rmtc_bot/src/core.cpp b/stage2/src/rmtc_bot/src/core.cpp
+index edc308a..e35176b 100644
+--- a/stage2/src/rmtc_bot/src/core.cpp
++++ b/stage2/src/rmtc_bot/src/core.cpp
+@@ -459,16 +459,16 @@ Action Planner::decide(const World &observed) {
+   }
+   const World &w=without_interpretation?*without_interpretation:observed;
+   const auto &f=w.current; reason="wait";goal_reason.clear();purity_evaluations=Json::array();opening_route_evaluation=Json();resource_route_evaluation=Json();resource_race_evaluations=Json::array();resource_recovery_evaluation=Json();
+-  observation_evaluation=Json();
++  observation_evaluation=Json();movement_recovery_evaluation=Json();
+   if(observation_session_!=f.session) {
+     observation_session_=f.session;observation_plan_={};observation_attempts_.clear();
+   }
+-  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();resource_feedback_={};return {};}
++  if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();resource_feedback_={};movement_feedback_={};return {};}
+   for(const auto &e:w.events.items) if(e.kind=="world_split" && e.start==f.tick && w.split_line(f.pos,e)) {
+-    reason="forced_respawn"; return {};
++    movement_feedback_={};reason="forced_respawn"; return {};
+   }
+   const double hp=f.hp-w.environmental_damage(f.pos,f.tick,f.protected_spawn);
+-  if(hp<=0) {reason="pre_combat_event_death";return {};}
++  if(hp<=0) {movement_feedback_={};reason="pre_combat_event_death";return {};}
+   std::map<int,double> unavoidable_event_damage;
+   auto event_cost=[&](Pos p,int tick,bool protected_spawn) {
+     double damage=w.environmental_damage(p,tick,protected_spawn);
+@@ -483,6 +483,65 @@ Action Planner::decide(const World &observed) {
+   };
+   const bool forecast=config_.tactical_forecast && stage_==2
+     && f.tick>=(config_.forecast_start_tick<0?max_ticks_/5:config_.forecast_start_tick);
++  const bool movement_recovery=config_.movement_blocked_recovery && stage_==2;
++  auto &movement=movement_feedback_;
++  if(!movement_recovery) movement={};
++  else {
++    if(movement.session!=f.session || f.tick<movement.processed_tick
++      || (movement.processed_tick!=f.tick && movement.proposed_tick!=f.tick-1)) movement={};
++    movement.session=f.session;
++    // An interpretation arriving after this Tick's first decision may change
++    // the physical direction of already-consumed receipts. Revoke that evidence
++    // even on a same-Tick replan, without consuming the receipt for a second time.
++    if(std::any_of(movement.receipt_reversals.begin(),movement.receipt_reversals.end(),[&](const auto &evidence) {
++      return evidence.second!=w.effect("illusion",f.team,evidence.first);
++    })) {
++      movement.cooldowns.clear();movement.failures=0;movement.failed_edge.reset();
++      movement.receipt_reversals.clear();movement.receipt_status="event_reinterpreted";
++    }
++    // A same-Tick event revision may replan, but must not count its receipt twice.
++    if(movement.processed_tick!=f.tick) {
++      const bool contiguous=movement.proposed_tick>=0 && movement.proposed_tick==f.tick-1 && f.action_tick==f.tick-1;
++      const bool consistent=contiguous && !movement.ambiguous
++        && movement.reversed==w.effect("illusion",f.team,f.tick-1);
++      const bool failed=consistent && movement.action.type=="move" && f.action_type=="move"
++        && !f.moved && f.action_error=="E_BLOCKED" && f.pos==movement.from && movement.entry;
++      movement.receipt_status.clear();
++      if(!contiguous) {
++        movement.cooldowns.clear();movement.failures=0;movement.failed_edge.reset();
++      } else if(failed) {
++        movement.receipt_reversals.emplace_back(movement.proposed_tick,movement.reversed);
++        const auto edge=std::make_pair(movement.from,*movement.entry);
++        movement.failures=movement.failed_edge==edge?movement.failures+1:1;
++        movement.failed_edge=edge;movement.receipt_status="blocked_once";
++        if(movement.failures>=2) {
++          // Geometry staggers retry times without team/seed-specific policy.
++          // Only fresh failed receipts start a cooldown; waiting never extends it.
++          const int until=f.tick+4+(f.pos.x+2*f.pos.y)%3;
++          auto it=movement.cooldowns.find(edge);
++          if(it==movement.cooldowns.end() || it->second<=f.tick) movement.cooldowns[edge]=until;
++          movement.receipt_status="edge_cooled";
++        }
++      } else {
++        movement.failures=0;movement.failed_edge.reset();
++        const bool successful=consistent && movement.action.type=="move" && f.action_type=="move"
++          && f.moved && f.action_error.empty() && movement.entry && f.pos==*movement.entry;
++        if(successful) movement.cooldowns.erase(std::make_pair(movement.from,*movement.entry));
++        // Unexplained displacement (including revival) invalidates local routing feedback.
++        else if(f.pos!=movement.from) movement.cooldowns.clear();
++        if(!consistent) {
++          movement.receipt_status="ambiguous_receipt";
++          movement.cooldowns.clear();
++        }
++      }
++      movement.processed_tick=f.tick;
++    }
++    for(auto it=movement.cooldowns.begin();it!=movement.cooldowns.end();)
++      if(it->second<=f.tick) it=movement.cooldowns.erase(it); else ++it;
++    // Two receipts plus the longest six-Tick cooldown fit in this window.
++    while(!movement.receipt_reversals.empty() && movement.receipt_reversals.front().first<f.tick-8)
++      movement.receipt_reversals.pop_front();
++  }
+   const bool resource_recovery=config_.resource_blocked_recovery && stage_==2 && f.tick<max_ticks_/5
+     && !forecast && !config_.resource_beam && !config_.information_paths
+     && !config_.opening_route_information && !config_.resource_route_pickups
+@@ -551,6 +610,33 @@ Action Planner::decide(const World &observed) {
+       }
+     }
+   }
++  auto cooled_edge=[&](Pos from,Pos to,int tick) {
++    auto it=movement.cooldowns.find(std::make_pair(from,to));
++    return it!=movement.cooldowns.end() && tick<it->second;
++  };
++  // Do not let a routing cooldown remove the only known nonlethal event exit.
++  // The normal combat/event scoring still decides whether to take that move.
++  auto exit_damage=[&](Pos p,bool protected_spawn) {
++    if(!escape_damage.empty() && !protected_spawn) return escape_damage[p.y*f.width+p.x];
++    return w.environmental_damage(p,f.tick+1,protected_spawn);
++  };
++  std::set<Pos> emergency_entries;
++  auto update_emergency_entries=[&](double surviving_hp) {
++    emergency_entries.clear();
++    if(movement.cooldowns.empty() || surviving_hp<=0 || exit_damage(f.pos,f.protected_spawn)<surviving_hp) return;
++    std::vector<Pos> exits;bool open_exit=false;
++    for(auto d:delta) {
++      Pos q=add(f.pos,d);
++      if(!w.visible(q) || w.blocked(q,f.tick) || w.blocked(q,f.tick+1) || w.occupied(q)
++        || exit_damage(q,false)>=surviving_hp) continue;
++      if(cooled_edge(f.pos,q,f.tick)) exits.push_back(q); else open_exit=true;
++    }
++    if(!open_exit) emergency_entries.insert(exits.begin(),exits.end());
++  };
++  update_emergency_entries(hp);
++  auto avoid_edge=[&](Pos from,Pos to,int tick) {
++    return !(from==f.pos && tick==f.tick && emergency_entries.count(to)) && cooled_edge(from,to,tick);
++  };
+   std::map<std::string,Pos> velocity;
+   if(forecast && w.history.size()>1) {
+     const auto &previous=w.history[w.history.size()-2];
+@@ -614,7 +700,8 @@ Action Planner::decide(const World &observed) {
+       // Current occupancy forbids the next action. Beyond that first step,
+       // allow a delayed route through an observed robot's cell as a hypothesis;
+       // replan from the next perception before actually entering it.
+-      if(w.blocked(q,arrival-1) || (occupied && (index==root || stage_!=2 || !config_.transient_occupancy))) continue;
++      if(w.blocked(q,arrival-1) || avoid_edge(p,q,arrival-1)
++        || (occupied && (index==root || stage_!=2 || !config_.transient_occupancy))) continue;
+       int next=q.y*f.width+q.x;
+       double extra=1+(w.explored.count(q)?0:.35)+(occupied?1.0:0.0);
+       if(index==root) extra-=first_information[d];
+@@ -1634,6 +1721,9 @@ Action Planner::decide(const World &observed) {
+   if(uncertain_threats) {ordinary_risk=outcomes(false);guarded_risk=outcomes(true);}
+   if(!probe_directions.empty()) probe_risk=outcomes(false,true);
+   const double vulnerable=w.effect("pan",f.team,f.tick)?w.effect_number("pan",f.team,f.tick,"damage_multiplier",2):1;
++  // Movement resolves after this Tick's combat, so a survivable event at full
++  // HP may become lethal after the already-visible incoming damage.
++  update_emergency_entries(hp-incoming*vulnerable);
+   const Entity *purity_enemy=nullptr;
+   if(config_.purity_joint_actions && config_.score_aware_combat && stage_==2 && purity
+     && !forecast && !f.protected_spawn
+@@ -1653,7 +1743,7 @@ Action Planner::decide(const World &observed) {
+     }
+   }
+   bool available_finisher=false;
+-  if((config_.productive_escape || config_.safe_progress_moves || resource_recovery) && !f.protected_spawn) for(const auto &enemy:f.entities)
++  if((config_.productive_escape || config_.safe_progress_moves || resource_recovery || movement_recovery) && !f.protected_spawn) for(const auto &enemy:f.entities)
+     if(enemy.type=="robot" && !enemy.protected_spawn) {
+       int radius=static_cast<int>(w.effect_number("unrivaled",f.team,f.tick,"attack_radius",2));
+       bool reachable=self_unrivaled?std::max(std::abs(enemy.pos.x-f.pos.x),std::abs(enemy.pos.y-f.pos.y))<=radius
+@@ -1686,7 +1776,8 @@ Action Planner::decide(const World &observed) {
+         if(length[index]>=2*f.radius) continue;
+         for(int d=0;d<4;++d) {
+           Pos q=add(p,delta[d]);
+-          if(!w.visible(q) || w.blocked(q,f.tick) || w.occupied(q) || (blocked && q==*blocked)) continue;
++          if(!w.visible(q) || w.blocked(q,f.tick) || w.occupied(q) || avoid_edge(p,q,f.tick+length[index])
++            || (blocked && q==*blocked)) continue;
+           int next=q.y*f.width+q.x;if(length[next]>=0) continue;
+           length[next]=length[index]+1;route_first[next]=index==root?d:route_first[index];frontier[write++]=next;
+         }
+@@ -1785,6 +1876,35 @@ Action Planner::decide(const World &observed) {
+       preferred=best;
+     }
+   }
++  // Alternative planners may have replaced the first step after the main route
++  // search. Repair a cooled first step locally without inventing a new goal.
++  int recovery_direction=-1;
++  const bool cooled_here=std::any_of(delta.begin(),delta.end(),[&](Pos d) {
++    return avoid_edge(f.pos,add(f.pos,d),f.tick);
++  });
++  if(cooled_here && !available_finisher && hp>incoming*vulnerable && !(goal && *goal==f.pos)) {
++    auto safe_step=[&](int d) {
++      Pos p=add(f.pos,delta[d]);
++      return w.visible(p) && !w.blocked(p,f.tick) && !w.blocked(p,f.tick+1) && !w.occupied(p)
++        && !avoid_edge(f.pos,p,f.tick) && exit_damage(p,false)<hp-incoming*vulnerable;
++    };
++    if(preferred>=0 && safe_step(preferred)) recovery_direction=preferred;
++    else {
++      double best_retreat=-inf;
++      for(int d=0;d<4;++d) if(safe_step(d)) {
++        Pos p=add(f.pos,delta[d]);double value=0;
++        if(goal) value+=.15*(distance(f.pos,*goal)-distance(p,*goal));
++        auto visit=w.visits.find(p);if(visit!=w.visits.end()) value-=std::min(1.0,visit->second*.05);
++        for(auto step:delta) {
++          Pos q=add(p,step);
++          if(q!=f.pos && w.visible(q) && !w.blocked(q,f.tick+1) && !w.occupied(q)
++            && !avoid_edge(p,q,f.tick+1)) value+=.1;
++        }
++        if(value>best_retreat) {best_retreat=value;recovery_direction=d;}
++      }
++      if(recovery_direction>=0) preferred=recovery_direction;
++    }
++  }
+   std::vector<Action> actions{{"wait",""}};
+   if(stage_==2) {
+     if(!f.protected_spawn) for(const auto &d:dirs) actions.push_back({"attack",d});
+@@ -1813,13 +1933,17 @@ Action Planner::decide(const World &observed) {
+     Pos end=f.pos; int actual=-1;
+     if(a.type=="move") {
+       int command=std::find(dirs.begin(),dirs.end(),a.direction)-dirs.begin();actual=reverse?(command^1):command;
+-      end=add(f.pos,delta[actual]);if(w.blocked(end,f.tick) || w.occupied(end)) continue;
++      end=add(f.pos,delta[actual]);
++      if(w.blocked(end,f.tick) || w.occupied(end) || avoid_edge(f.pos,end,f.tick)) continue;
+       // Keep action selection connected to the value of the chosen plan.
+       double plan_bonus=(goal_type=="engage" || goal_type=="ambush")?.6:std::clamp(best_goal,.7,2.5);
+       if(stage_==2 && (goal_type=="resource" || goal_type=="explore")
+         && f.tick<max_ticks_/5 && w.explored.size()<static_cast<size_t>(size*.75))
+         plan_bonus*=config_.early_movement_scale;
+       score=.1+(actual==preferred?plan_bonus:0);
++      // A bounded nudge can overcome the recent-visit cost of stepping back.
++      // It does not bypass combat, purity defense, or the event-risk evaluation.
++      if(actual==recovery_direction) score+=.8;
+       if(config_.productive_escape && stage_==2 && f.tick<max_ticks_/5
+         && (goal_type=="resource" || goal_type=="explore") && actual==preferred
+         && !f.protected_spawn && !available_finisher && incoming*vulnerable>0 && incoming*vulnerable<hp) {
+@@ -2135,8 +2259,35 @@ Action Planner::decide(const World &observed) {
+     if(score>best_score) {best_score=score;best=a;}
+   }
+   reason=goal_type;
++  if(best.type=="move" && recovery_direction>=0) {
++    int command=std::find(dirs.begin(),dirs.end(),best.direction)-dirs.begin();
++    if((reverse?(command^1):command)==recovery_direction) reason="contention_detour";
++  }
+   if(best.type=="attack" || best.type=="defend") reason="combat";
+   if(!legal(best,f,stage_)) return {};
++  if(movement_recovery) {
++    std::optional<Pos> entry;
++    if(best.type=="move") {
++      int command=std::find(dirs.begin(),dirs.end(),best.direction)-dirs.begin();
++      entry=add(f.pos,delta[reverse?(command^1):command]);
++    }
++    const bool same_tick=movement.proposed_tick==f.tick;
++    // Receipts contain no direction. A changed same-Tick proposal cannot be
++    // attributed safely to one of the submissions, even if it later changes back.
++    movement.ambiguous=same_tick && (movement.ambiguous || movement.action.type!=best.type
++      || movement.action.direction!=best.direction || movement.entry!=entry || movement.from!=f.pos);
++    movement.proposed_tick=f.tick;movement.from=f.pos;movement.action=best;
++    movement.entry=entry;movement.reversed=reverse;
++    if(!movement.cooldowns.empty() || !movement.receipt_status.empty() || movement.ambiguous) {
++      Json edges=Json::array();
++      for(const auto &[edge,until]:movement.cooldowns) edges.push_back({
++        {"from",{edge.first.x,edge.first.y}},{"to",{edge.second.x,edge.second.y}},{"until_tick",until}});
++      movement_recovery_evaluation={{"status",movement.receipt_status},{"failed_receipts",movement.failures},
++        {"cooldown_edges",edges},{"event_escape_retry",!emergency_entries.empty()},{"proposal_ambiguous",movement.ambiguous},
++        {"preferred_effective_direction",recovery_direction>=0?Json(dirs[recovery_direction]):Json()},
++        {"proposed_entry",entry?Json::array({entry->x,entry->y}):Json()},{"obstacle_inferred",false}};
++    }
++  }
+   if(resource_recovery) {
+     feedback.proposed_tick=f.tick;feedback.from=f.pos;feedback.action=best;feedback.proposed_entry.reset();
+     if(best.type=="move" && goal && goal_type=="resource" && distance(f.pos,*goal)==1) {
+diff --git a/stage2/src/rmtc_bot/src/node.cpp b/stage2/src/rmtc_bot/src/node.cpp
+index cbcf888..9c39286 100644
+--- a/stage2/src/rmtc_bot/src/node.cpp
++++ b/stage2/src/rmtc_bot/src/node.cpp
+@@ -44,6 +44,7 @@ public:
+     planner_config.resource_race_yield=declare_parameter<bool>("resource_race_yield",false);
+     planner_config.resource_fresh_returns=declare_parameter<bool>("resource_fresh_returns",false);
+     planner_config.resource_blocked_recovery=declare_parameter<bool>("resource_blocked_recovery",false);
++    planner_config.movement_blocked_recovery=declare_parameter<bool>("movement_blocked_recovery",false);
+     planner_config.observation_detour=declare_parameter<bool>("observation_detour",false);
+     planner_config.observation_extra_limit=declare_parameter<int>("observation_extra_limit",2);
+     planner_config.observation_attempt_limit=declare_parameter<int>("observation_attempt_limit",99);
+@@ -160,6 +161,9 @@ private:
+       {"revision",true},{"selected",action.json(f)},{"estimates",planner_->resource_race_evaluations}});
+     if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
+       {"revision",true},{"selected",action.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
++    if(!planner_->movement_recovery_evaluation.is_null()) record({{"kind","movement_recovery_evaluation"},
++      {"session_id",f.session},{"tick",f.tick},{"revision",true},
++      {"selected",action.json(f)},{"estimate",planner_->movement_recovery_evaluation}});
+   }
+   void collect_ai(bool allow_revision=true) {
+     if(!ai_)return;
+@@ -275,6 +279,8 @@ private:
+         {"selected",a.json(f)},{"estimates",planner_->resource_race_evaluations}});
+       if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
+         {"selected",a.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
++      if(!planner_->movement_recovery_evaluation.is_null()) record({{"kind","movement_recovery_evaluation"},
++        {"session_id",f.session},{"tick",f.tick},{"selected",a.json(f)},{"estimate",planner_->movement_recovery_evaluation}});
+       if(!planner_->observation_evaluation.is_null()) record({{"kind","observation_evaluation"},
+         {"session_id",f.session},{"tick",f.tick},{"selected",a.json(f)},{"estimate",planner_->observation_evaluation}});
+       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},

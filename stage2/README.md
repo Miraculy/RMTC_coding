@@ -1,6 +1,8 @@
 # 二阶段排名导向发布版
 
-本目录固定完整17af源码和B1参数。C++源码逐文件等同于仓库提交 `f049728` 中的 `src/rmtc_bot`；运行时只将 `resource_blocked_recovery` 从原默认false改为true。其余规划、事件和修订开关在 `config/final.yaml` 中明确固定。源码及参数校验值见 `SOURCE_MANIFEST.json`。
+当前工作树为基于 `4d632d3`（v2.4）的**通用争格脱困源码候选 v1**，在 `config/final.yaml` 启用 `movement_blocked_recovery`。同一移动边连续两次收到匹配的本车 `E_BLOCKED` 后，短暂冷却该边并重算路径；保留事件解释时效、guard+F1、纯净防御和天使利用改动。详见[实现说明](../docs/STAGE2_CONTENTION_RECOVERY_V1_20261029.md)。按本轮用户要求，未编译、未运行测试或比赛，安装目录尚未更新，不能据此宣称脱困或增分已经验证。
+
+首版来源为17af源码和B1参数，曾逐文件等同于提交 `f049728` 中的 `src/rmtc_bot`；后续版本沿革见下文，当前源码已不再逐字节等同该祖先提交。当前源码及配置校验值在 `SOURCE_MANIFEST.json`，其中历史二进制哈希不代表本轮候选构建。
 
 从仓库根构建并运行：
 
@@ -10,7 +12,7 @@
 ./run_contestant.sh A 2
 ```
 
-也可直接运行 `./run_stage2_final.sh A`。脚本使用仓库相对位置寻找自己的安装产物，不依赖维护者绝对路径；后置ROS参数可显式覆盖配置。源码复制自已验证版本，未合入探索候选或一阶段算法。
+也可在构建后运行 `./run_stage2_final.sh A`。脚本使用仓库相对位置寻找自己的安装产物，不依赖维护者绝对路径；后置ROS参数可显式覆盖配置。当前源码候选须先构建才会被入口使用；关闭新功能可传入 `-p movement_blocked_recovery:=false`。
 
 需要 Ubuntu 22.04、ROS 2 Humble、colcon、nlohmann-json3-dev、libcurl4-openssl-dev，完整安装说明见根README。非系统位置的依赖可通过CMake参数指定，例如 `./build_stage2.sh -Dnlohmann_json_DIR=/依赖前缀/lib/cmake/nlohmann_json`；仓库不写死本机依赖目录。
 

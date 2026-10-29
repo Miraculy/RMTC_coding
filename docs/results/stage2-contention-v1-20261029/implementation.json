@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-29",
+  "base_commit": "4d632d39c8e60610a761cf0e2e9a71c00b3176ad",
+  "candidate": "v2.5-movement-recovery-candidate-v1",
+  "scope": "stage2 source candidate only",
+  "validation": {
+    "status": "source_only_unbuilt_untested",
+    "build_performed": false,
+    "tests_performed": false,
+    "matches_started": 0,
+    "installed_binary_updated": false,
+    "reason": "User requested one implementation version without tests"
+  },
+  "review": "Source reading and static review only; no compiler, unit tests, replay, simulation, referee matches or AI requests were run",
+  "configuration_parameters": 53,
+  "patch_sha256": "962d8e8423a6a521e9cd9c25df8121a0743898369ab79e95a1cb528e680b9b94",
+  "source_manifest_sha256": "6ef4dd40ee78c66e62768c4d30863bb472af2c81eef3156794c008880712aefb",
+  "changed_stage2_files": [
+    "stage2/README.md",
+    "stage2/SOURCE_MANIFEST.json",
+    "stage2/config/final.yaml",
+    "stage2/src/rmtc_bot/include/rmtc_bot/core.hpp",
+    "stage2/src/rmtc_bot/src/core.cpp",
+    "stage2/src/rmtc_bot/src/node.cpp"
+  ],
+  "report": "docs/STAGE2_CONTENTION_RECOVERY_V1_20261029.md",
+  "delivered_on": "2026-10-30",
+  "timezone": "Asia/Shanghai",
+  "file_identity_review": {
+    "date": "2026-10-30",
+    "source_files_matching_manifest": 12,
+    "profile_parameters_matching_manifest": 53,
+    "baseline_parameters_preserved": 52,
+    "patch_matches_worktree": true,
+    "patch_bytes": 32014,
+    "runtime_validation": false
+  }
+}

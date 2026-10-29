@@ -131,6 +131,7 @@ struct PlannerConfig {
   bool resource_race_yield{false}; // Experimental: discount a fresh resource a visibly approaching rival can enter first.
   bool resource_fresh_returns{false}; // Experimental: keep full value for a currently visible resource toward our start.
   bool resource_blocked_recovery{false}; // Experimental: leave a repeatedly failed entry for a visible alternative.
+  bool movement_blocked_recovery{false}; // Candidate: temporary directed-edge cooldown after repeated own E_BLOCKED.
   bool observation_detour{false}; // Experimental: known-path observation with a bounded return to a real resource.
   int observation_extra_limit{2}; // Max extra steps for the observation detour.
   int observation_attempt_limit{99}; // Max distinct goals used for observation per game.
@@ -166,7 +167,7 @@ class Planner {
 public:
   explicit Planner(int stage=2, int max_ticks=500, PlannerConfig config={});
   Action decide(const World &w);
-  void reset() { target_.reset(); target_type_.clear(); recovery_mission_.reset(); resource_feedback_={}; observation_plan_={}; observation_attempts_.clear(); observation_session_.clear(); observation_evaluation=Json(); goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); resource_route_evaluation=Json(); resource_race_evaluations=Json::array(); resource_recovery_evaluation=Json(); reason = "reset"; }
+  void reset() { target_.reset(); target_type_.clear(); recovery_mission_.reset(); resource_feedback_={}; movement_feedback_={}; observation_plan_={}; observation_attempts_.clear(); observation_session_.clear(); observation_evaluation=Json(); goal_reason.clear(); purity_evaluations=Json::array(); opening_route_evaluation=Json(); resource_route_evaluation=Json(); resource_race_evaluations=Json::array(); resource_recovery_evaluation=Json(); movement_recovery_evaluation=Json(); reason = "reset"; }
   std::string reason;
   std::string goal_reason; // Selected goal before an immediate combat action overrides reason.
   Json purity_evaluations=Json::array(); // Local estimates only; never fed back as observations.
@@ -174,6 +175,7 @@ public:
   Json resource_route_evaluation; // Proposed incidental pickup; execution and collection require later perception.
   Json resource_race_evaluations=Json::array(); // Observed approach and heuristic value discount, not a future enemy action.
   Json resource_recovery_evaluation; // Failed-entry evidence and a bounded alternative, never a confirmed pickup.
+  Json movement_recovery_evaluation; // Own matched receipts and temporary routing constraints, never obstacle facts.
   Json observation_evaluation;
   std::optional<Pos> target() const {return target_;}
 private:
@@ -196,5 +198,16 @@ private:
     Action action;
     std::optional<Pos> proposed_entry, failed_entry, blocked_entry, alternative;
   } resource_feedback_;
+  struct MovementFeedback {
+    std::string session, receipt_status;
+    int processed_tick{-1}, proposed_tick{-1}, failures{};
+    Pos from;
+    Action action;
+    bool reversed{}, ambiguous{};
+    std::optional<Pos> entry;
+    std::optional<std::pair<Pos,Pos>> failed_edge;
+    std::map<std::pair<Pos,Pos>,int> cooldowns; // Exclusive expiry Tick; not a map obstacle.
+    std::deque<std::pair<int,bool>> receipt_reversals; // Recent consumed evidence, including same-Tick replans.
+  } movement_feedback_;
 };
 } // namespace rmtc
