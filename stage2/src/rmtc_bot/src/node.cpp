@@ -44,6 +44,12 @@ public:
     planner_config.resource_race_yield=declare_parameter<bool>("resource_race_yield",false);
     planner_config.resource_fresh_returns=declare_parameter<bool>("resource_fresh_returns",false);
     planner_config.resource_blocked_recovery=declare_parameter<bool>("resource_blocked_recovery",false);
+    planner_config.observation_detour=declare_parameter<bool>("observation_detour",false);
+    planner_config.observation_extra_limit=declare_parameter<int>("observation_extra_limit",2);
+    planner_config.observation_attempt_limit=declare_parameter<int>("observation_attempt_limit",99);
+    planner_config.observation_min_tick=declare_parameter<int>("observation_min_tick",0);
+    planner_config.observation_max_known_resources=declare_parameter<int>("observation_max_known_resources",99);
+    planner_config.resource_arrival_value=declare_parameter<bool>("resource_arrival_value",false);
     planner_config.survival_conditioned_progress=declare_parameter<bool>("survival_conditioned_progress",false);
     planner_config.respawn_task_route=declare_parameter<bool>("respawn_task_route",false);
     planner_config.safe_progress_moves=declare_parameter<bool>("safe_progress_moves",false);
@@ -261,6 +267,8 @@ private:
         {"selected",a.json(f)},{"estimates",planner_->resource_race_evaluations}});
       if(!planner_->resource_recovery_evaluation.is_null()) record({{"kind","resource_recovery_evaluation"},{"tick",f.tick},
         {"selected",a.json(f)},{"estimate",planner_->resource_recovery_evaluation}});
+      if(!planner_->observation_evaluation.is_null()) record({{"kind","observation_evaluation"},
+        {"session_id",f.session},{"tick",f.tick},{"selected",a.json(f)},{"estimate",planner_->observation_evaluation}});
       record({{"kind","decision"},{"session_id",f.session},{"tick",f.tick},{"position",{f.pos.x,f.pos.y}},
         {"hp",f.hp},{"alive",f.alive},{"protected",f.protected_spawn},
         {"public_missions",f.missions},{"initial_spawn",world_.spawn?Json::array({world_.spawn->x,world_.spawn->y}):Json()},

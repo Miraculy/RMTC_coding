@@ -33,3 +33,11 @@ python3 tools/verify_stage2_release.py
 - 依据：B1 12图×4=48局、B2 8图×4=32局本地 A/B（AI 关闭、冻结对手）：平均名次 2.31→2.17 / 2.56→2.19，前二 28→30/48、14→20/32，严格第一 14→17/48、10→13/32，死亡 229→191、157→135，D 损失 10080→7755、9290→7770，defend Tick 4303/4208→0；R 约 -0.6（已知边界）。
 - 校验：build_stage2.sh、colcon test（136+14 通过）、tools/verify_stage2_release.py。
 - 详见 docs/STAGE2_V2_ACCEPTANCE_20261028.md。
+
+
+## v2.1 发布（2026-10-29）
+在 v2（无 defend + 开局本象限 20R +6）基础上，启用 guard+F1：
+- observation_detour=true（extra=2, attempts=1, min_tick=8, max_known=1）；
+- resource_arrival_value=true（到达可获得性替换竞争折扣）。
+
+修正评测（AI 关闭、mock、冻结对手）配对结果：B1 R 50.88→51.76、名次 2.059→1.853、前二 23→26；B2 R 持平 49.38、名次 2.125→2.062、前二 20→21。B1 死亡 8.24→9.06；R ≥ base+2 未达成，真实 LLM 条件未验证。详见 docs/STAGE2_V2_1_GUARD_F1_ACCEPTANCE_20261029.md。

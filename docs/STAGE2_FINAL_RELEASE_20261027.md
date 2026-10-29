@@ -58,3 +58,7 @@
 
 ## 2026-10-28 更新：v2 已接受并同步
 用户确认接受本地 v2（阶段二删除 defend + 开局本象限 20R +6）。正式 stage2 源码已更新，构建/测试/清单校验通过；根阶段一 e075 不变。验收数据与边界见 [STAGE2_V2_ACCEPTANCE_20261028.md](STAGE2_V2_ACCEPTANCE_20261028.md)。
+
+
+## 2026-10-29 更新：v2.1（guard+F1）
+用户要求将 guard+F1 候选并入正式包。已启用 observation_detour 与 resource_arrival_value 参数，构建/测试/清单校验通过；R 在 B1 +0.88、B2 持平，未达 base+2；详见 [STAGE2_V2_1_GUARD_F1_ACCEPTANCE_20261029.md](STAGE2_V2_1_GUARD_F1_ACCEPTANCE_20261029.md)。

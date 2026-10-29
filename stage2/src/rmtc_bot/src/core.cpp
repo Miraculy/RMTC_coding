@@ -413,6 +413,33 @@ double World::environmental_damage(Pos p,int tick,bool protected_spawn) const {
   return damage;
 }
 
+double resource_arrival_probability(const World &w,Pos resource,int arrival) {
+  double available=1;
+  for(const auto &[team,record]:w.enemies) {
+    int age=w.current.tick-record.second;
+    if(age<0 || age>4 || record.first.hp<=0) continue;
+    const auto *past=w.at(record.second-1);
+    std::optional<Pos> before;
+    if(past) for(const auto &e:past->entities) if(e.type=="robot" && e.team==team) before=e.pos;
+    double total=.5,target=0; // An outside option preserves attack/wait/other intent.
+    for(const auto &[id,r]:w.resources) {
+      (void)id;int dist=distance(record.first.pos,r.pos);
+      double weight=(r.value/10.0)/(dist+1.0);
+      if(before && distance(*before,record.first.pos)==1) {
+        int progress=distance(*before,r.pos)-dist;
+        weight*=progress>0?3.0:.5;
+      }
+      total+=weight;if(r.pos==resource) target+=weight;
+    }
+    int earliest=std::max(0,distance(record.first.pos,resource)-age);
+    double urgency=std::clamp((arrival-earliest)/4.0,0.0,1.0);
+    // Each rival's intent mass is shared across its alternatives, rather than
+    // assuming it simultaneously rushes every resource. Unknown plans remain uncertain.
+    available*=1-.9*(target/total)*urgency/(1+.25*age);
+  }
+  return std::clamp(available,.1,1.0);
+}
+
 Planner::Planner(int stage,int max_ticks,PlannerConfig config):stage_(stage),max_ticks_(max_ticks),config_(config) {
   if(!std::isfinite(config_.early_movement_scale) || config_.early_movement_scale<.1 || config_.early_movement_scale>5
     || !std::isfinite(config_.early_damage_scale) || config_.early_damage_scale<0 || config_.early_damage_scale>1
@@ -432,6 +459,10 @@ Action Planner::decide(const World &observed) {
   }
   const World &w=without_interpretation?*without_interpretation:observed;
   const auto &f=w.current; reason="wait";goal_reason.clear();purity_evaluations=Json::array();opening_route_evaluation=Json();resource_route_evaluation=Json();resource_race_evaluations=Json::array();resource_recovery_evaluation=Json();
+  observation_evaluation=Json();
+  if(observation_session_!=f.session) {
+    observation_session_=f.session;observation_plan_={};observation_attempts_.clear();
+  }
   if(!f.alive || f.tick>=max_ticks_) {recovery_mission_.reset();resource_feedback_={};return {};}
   for(const auto &e:w.events.items) if(e.kind=="world_split" && e.start==f.tick && w.split_line(f.pos,e)) {
     reason="forced_respawn"; return {};
@@ -798,6 +829,8 @@ Action Planner::decide(const World &observed) {
     }
     if(stage_==2 && config_.race_aware_resources)
       competition=capture_probability(r.pos,steps[r.pos.y*f.width+r.pos.x]);
+    else if(stage_==2 && config_.resource_arrival_value)
+      competition=resource_arrival_probability(w,r.pos,steps[r.pos.y*f.width+r.pos.x]);
     if(config_.resource_race_yield && stage_==2 && f.tick<std::min(40,max_ticks_/5)
       && !forecast && !config_.race_aware_resources && w.events.items.empty() && w.events.effects.empty()
       && r.seen==f.tick && distance(f.pos,r.pos)>=2 && !w.blocked(r.pos,f.tick) && !w.occupied(r.pos)) {
@@ -865,13 +898,40 @@ Action Planner::decide(const World &observed) {
       }
     } else for(size_t i=0;i<resource_options.size();++i) for(size_t j=0;j<resource_options.size();++j)
       pair_steps[i][j]=distance(resource_options[i].pos,resource_options[j].pos);
+    const int probability_horizon=f.width+f.height+4;
+    std::vector<int> probability_index(size,-1);
+    std::vector<std::vector<double>> probabilities;
+    if(config_.resource_arrival_value && !config_.race_aware_resources) {
+      probabilities.assign(resource_options.size(),std::vector<double>(probability_horizon+1));
+      for(size_t i=0;i<resource_options.size();++i) {
+        Pos p=resource_options[i].pos;probability_index[p.y*f.width+p.x]=static_cast<int>(i);
+        for(int t=0;t<=probability_horizon;++t) probabilities[i][t]=resource_arrival_probability(w,p,t);
+      }
+    }
+    auto arrival_probability=[&](Pos p,int arrival) {
+      return probabilities[probability_index[p.y*f.width+p.x]][std::clamp(arrival,0,probability_horizon)];
+    };
     auto follow_reward=[&](const ResourceOption &r,int normal,int high,double collected_value,int arrival) {
       double first_points=std::min(r.value,std::max(0.0,120-f.resource_value))*.25;
       double future_points=std::min(r.value,std::max(0.0,120-f.resource_value-collected_value))*.25;
       double reward=std::max(0.0,r.reward+(task_reward(r.value,normal,high,collected_value)-r.task_bonus
         +future_points-first_points+((r.seen>=f.tick-1?denial_reward(r.pos,r.value,arrival):0)-r.denial_bonus))*r.probability);
       if(config_.race_aware_resources) reward*=capture_probability(r.pos,arrival)/r.competition;
+      else if(config_.resource_arrival_value)
+        reward*=arrival_probability(r.pos,arrival)/r.competition;
       return reward;
+    };
+    auto delayed_loss=[&](size_t i,size_t j,size_t k,int arrival) {
+      if(!config_.resource_arrival_value || config_.race_aware_resources) return 0.0;
+      size_t end=k<resource_options.size()?k:j;double loss=0;
+      for(size_t m=0;m<resource_options.size();++m) if(m!=i && m!=j && m!=k && pair_steps[end][m]>=0) {
+        const auto &r=resource_options[m];
+        double now=arrival_probability(r.pos,r.steps);
+        double later=arrival_probability(r.pos,arrival+pair_steps[end][m]);
+        double deferred=(r.reward/r.competition)*std::max(0.0,now-later)/std::pow(r.cost+1,.85);
+        loss=std::max(loss,deferred);
+      }
+      return .12*loss;
     };
     for(size_t i=0;i<resource_options.size();++i) {
       const auto &a=resource_options[i];
@@ -883,13 +943,14 @@ Action Planner::decide(const World &observed) {
         int normal=a.value<20?1:0,high=a.value>=20?1:0;
         int arrival=a.steps+pair_steps[i][j];
         double second=first_value+.65*follow_reward(b,normal,high,a.value,arrival)/std::pow(elapsed+1,.85);
-        value=std::max(value,second);
+        value=std::max(value,second-delayed_loss(i,j,resource_options.size(),arrival));
         if(config_.resource_lookahead<3) continue;
         for(size_t k=0;k<resource_options.size();++k) if(k!=i && k!=j) {
           if(pair_steps[j][k]<0) continue;
           const auto &c=resource_options[k];double end=elapsed+pair_steps[j][k];
           if(end<=max_ticks_-f.tick) value=std::max(value,second+.4*follow_reward(c,
-            normal+(b.value<20?1:0),high+(b.value>=20?1:0),a.value+b.value,arrival+pair_steps[j][k])/std::pow(end+1,.85));
+            normal+(b.value<20?1:0),high+(b.value>=20?1:0),a.value+b.value,arrival+pair_steps[j][k])/std::pow(end+1,.85)
+            -delayed_loss(i,j,k,arrival+pair_steps[j][k]));
         }
       }
       offer(a.pos,value*std::pow(a.cost+1,.85),"resource");
@@ -1183,6 +1244,111 @@ Action Planner::decide(const World &observed) {
   target_=goal;target_type_=goal_type;goal_reason=goal?goal_type:"";int preferred=-1;
   if(goal) preferred=first[goal->y*f.width+goal->x];
   if(searched_first) preferred=*searched_first;
+  if(config_.observation_detour && stage_==2) {
+    // All traversed cells are observed free cells. The unseen footprint is a
+    // reason to look, never a synthetic resource or a guaranteed payoff.
+    auto &plan=observation_plan_;
+    const bool quiet=f.alive && f.tick<max_ticks_/5 && f.hp>=60 && !forecast
+      && w.events.items.empty() && w.events.effects.empty()
+      && !config_.information_paths && !config_.resource_beam && !config_.opening_route_information
+      && !config_.resource_route_pickups && !feedback.alternative && feedback.failures==0
+      && std::none_of(f.entities.begin(),f.entities.end(),[](const auto &e){return e.type=="robot";});
+    auto known_free=[&](Pos p) {return w.inside(p) && w.explored.count(p) && !w.blocked(p,f.tick) && !w.occupied(p);};
+    auto bfs=[&](Pos origin,std::vector<int> &length,std::vector<int> &direction) {
+      length.assign(size,-1);direction.assign(size,-1);std::queue<Pos> q;
+      length[origin.y*f.width+origin.x]=0;q.push(origin);
+      while(!q.empty()) {
+        Pos p=q.front();q.pop();int i=p.y*f.width+p.x;
+        for(int d=0;d<4;++d) {
+          Pos n=add(p,delta[d]);if(!known_free(n)) continue;int j=n.y*f.width+n.x;
+          if(length[j]>=0) continue;
+          length[j]=length[i]+1;direction[j]=i==origin.y*f.width+origin.x?d:direction[i];q.push(n);
+        }
+      }
+    };
+    std::vector<int> length,direction;
+    if(quiet) bfs(f.pos,length,direction);
+    auto anchor_present=[&]() {return plan.anchor && std::any_of(w.resources.begin(),w.resources.end(),
+      [&](const auto &r){return r.second.pos==*plan.anchor;});};
+    bool released=false;
+    if(plan.anchor) {
+      const bool new_choice=goal && goal_type=="resource" && *goal!=*plan.anchor
+        && std::any_of(w.resources.begin(),w.resources.end(),[&](const auto &r) {
+          return r.second.pos==*goal && !plan.known_ids.count(r.first);
+        });
+      const bool interrupted=plan.previous_tick!=f.tick-1
+        || (f.action_tick==f.tick-1 && f.action_type=="move" && !f.moved);
+      if(!quiet || !anchor_present() || f.tick>plan.deadline || interrupted || new_choice
+        || length[plan.anchor->y*f.width+plan.anchor->x]<0) {
+        observation_evaluation={{"status",new_choice?"new_resource_selected":"cancelled"}};
+        plan={};released=true;
+      } else {
+        if(plan.waypoint && f.pos==*plan.waypoint) plan.waypoint.reset();
+        Pos next=plan.waypoint?*plan.waypoint:*plan.anchor;int i=next.y*f.width+next.x;
+        if(length[i]<0) {plan={};released=true;observation_evaluation={{"status","route_invalid"}};}
+        else {
+          goal=next;goal_type=plan.waypoint?"observe":"resource";preferred=direction[i];
+          best_goal=std::max(.7,best_goal);
+          observation_evaluation={{"status",plan.waypoint?"observing":"fallback"},
+            {"anchor",{plan.anchor->x,plan.anchor->y}},{"deadline",plan.deadline}};
+          plan.previous_tick=f.tick;
+        }
+      }
+    }
+    const bool needs_high=w.high_collected==0 && std::none_of(w.resources.begin(),w.resources.end(),
+      [](const auto &r){return r.second.value>=20;});
+    if(!plan.anchor && !released && quiet && needs_high && goal && goal_type=="resource" && f.tick>=config_.observation_min_tick
+      && int(w.resources.size())<=config_.observation_max_known_resources
+      && !observation_attempts_.count(*goal) && int(observation_attempts_.size())<config_.observation_attempt_limit
+      && preferred>=0 && f.radius>=2) {
+      const int destination=goal->y*f.width+goal->x;
+      auto resource=std::find_if(w.resources.begin(),w.resources.end(),[&](const auto &r) {
+        return r.second.pos==*goal && r.second.seen==f.tick && r.second.value<20;
+      });
+      if(resource!=w.resources.end() && length[destination]>=2 && length[destination]<=8
+        && length[destination]==steps[destination]) {
+        std::vector<int> remaining,unused;bfs(*goal,remaining,unused);
+        std::set<Pos> direct_vision;
+        auto footprint=[&](Pos p,auto fn) {
+          for(int x=std::max(0,p.x-f.radius);x<=std::min(f.width-1,p.x+f.radius);++x)
+            for(int y=std::max(0,p.y-f.radius);y<=std::min(f.height-1,p.y+f.radius);++y) fn(Pos{x,y});
+        };
+        Pos p=f.pos;int guard=0;
+        while(p!=*goal && guard++<=length[destination]) {
+          int chosen=-1;
+          for(int d=0;d<4;++d) {
+            Pos n=add(p,delta[d]);if(!known_free(n)) continue;
+            if(remaining[n.y*f.width+n.x]==remaining[p.y*f.width+p.x]-1) {
+              if(chosen<0 || (p==f.pos && d==preferred)) chosen=d;
+            }
+          }
+          if(chosen<0) break;
+          p=add(p,delta[chosen]);footprint(p,[&](Pos n){direct_vision.insert(n);});
+        }
+        std::optional<Pos> waypoint;double value=0;int gain=0,extra=0,via=0;
+        for(int i=0;i<size;++i) {
+          if(length[i]<1 || length[i]>3 || remaining[i]<1 || direction[i]<0) continue;
+          int travel=length[i]+remaining[i],detour=travel-length[destination];
+          if(detour<0 || detour>config_.observation_extra_limit || f.tick+travel>=max_ticks_) continue;
+          Pos q{i%f.width,i/f.width};int novel=0;
+          footprint(q,[&](Pos n){if(!w.explored.count(n) && !direct_vision.count(n)) ++novel;});
+          if(novel<2*f.radius) continue;
+          double rate=double(novel)/(detour+1.0)-.1*length[i];
+          if(rate>value) {value=rate;waypoint=q;gain=novel;extra=detour;via=travel;}
+        }
+        if(waypoint) {
+          plan.anchor=goal;plan.waypoint=waypoint;plan.deadline=f.tick+via;plan.previous_tick=f.tick;
+          for(const auto &[id,r]:w.resources) {(void)r;plan.known_ids.insert(id);}
+          observation_attempts_.insert(*goal);
+          observation_evaluation={{"status","started"},{"anchor",{goal->x,goal->y}},
+            {"waypoint",{waypoint->x,waypoint->y}},{"new_cells_beyond_direct",gain},
+            {"extra_steps",extra},{"fallback_arrival",plan.deadline}};
+          goal=waypoint;goal_type="observe";preferred=direction[waypoint->y*f.width+waypoint->x];
+        }
+      }
+    }
+    target_=goal;target_type_=goal_type;goal_reason=goal?goal_type:"";
+  }
   if(config_.resource_route_pickups && stage_==2 && f.tick<std::min(40,max_ticks_/5)
     && !forecast && !config_.information_paths && !config_.resource_beam && !config_.opening_route_information
     && w.events.items.empty() && w.events.effects.empty()

@@ -20,6 +20,12 @@
     resource_race_yield: false
     resource_fresh_returns: false
     resource_blocked_recovery: true
+    observation_detour: true
+    observation_extra_limit: 2
+    observation_attempt_limit: 1
+    observation_min_tick: 8
+    observation_max_known_resources: 1
+    resource_arrival_value: true
     survival_conditioned_progress: false
     respawn_task_route: false
     safe_progress_moves: false
