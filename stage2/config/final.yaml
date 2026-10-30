@@ -1,4 +1,4 @@
-# Candidate on v2.4: enable generic movement recovery; not built or tested yet.
+# Stage-two v2.4 formal defaults; generic movement recovery is experimental and off.
 /**:
   ros__parameters:
     early_movement_scale: 1.0
@@ -20,7 +20,6 @@
     resource_race_yield: false
     resource_fresh_returns: false
     resource_blocked_recovery: true
-    movement_blocked_recovery: true
     purity_defense: true
     angel_value: true
     observation_detour: true
@@ -54,3 +53,6 @@
     event_revisions: false
     ai_action_revision: false
     ai_enabled: true
+
+    # Experimental: opt in explicitly for generic movement contention recovery.
+    movement_blocked_recovery: false

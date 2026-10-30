@@ -1,5 +1,7 @@
 # 二阶段通用争格脱困 v1 实现说明
 
+> 当前状态（2026-10-30）：按用户要求，通用争格脱困已撤出正式默认，`stage2/config/final.yaml` 中 `movement_blocked_recovery: false`，作为显式开启的实验参数保留。实验使用 `./run_contestant.sh A 2 -p movement_blocked_recovery:=true`。后续验证见[更新测试](REMOTE_UPDATE_CONTENTION_TEST_20261030.md)和[真实DS测试](STAGE2_DEEPSEEK_CONTENTION_TEST_20261030.md)。下文保留原实现交付时的历史状态。
+
 实现日期：2026-10-29；收尾交付：2026-10-30。基准提交：`4d632d39c8e60610a761cf0e2e9a71c00b3176ad`（v2.4）。本轮交付一个源码候选，按用户要求不做测试；未编译、未运行单元测试、重放、模拟、裁判比赛或真实模型调用，也未更新安装产物。本说明随用户要求的候选源码提交，发布不改变未构建、未验证的状态。以下描述的是实现机制，不是实测效果。
 
 ## 目标和基准

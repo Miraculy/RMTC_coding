@@ -1,8 +1,8 @@
 # 二阶段排名导向发布版
 
-当前工作树为基于 `4d632d3`（v2.4）的**通用争格脱困源码候选 v1**，在 `config/final.yaml` 启用 `movement_blocked_recovery`。同一移动边连续两次收到匹配的本车 `E_BLOCKED` 后，短暂冷却该边并重算路径；保留事件解释时效、guard+F1、纯净防御和天使利用改动。详见[实现说明](../docs/STAGE2_CONTENTION_RECOVERY_V1_20261029.md)。按本轮用户要求，未编译、未运行测试或比赛，安装目录尚未更新，不能据此宣称脱困或增分已经验证。
+当前正式配置保留v2.4策略组合（事件解释时效、guard+F1、洁身自好防御和天使利用）。远端新增的通用争格脱困保留为**默认关闭的实验参数**：`movement_blocked_recovery: false`；正式入口不会启用它。2026-10-30按用户要求撤出正式默认：真实DS有效14组配对未显示总体收益，平均分42.6786→41.7857，虽然最长受阻262→2 Tick。完整范围、模型波动及余额中断说明见[DS测试总结](../docs/STAGE2_DEEPSEEK_CONTENTION_TEST_20261030.md)，机制历史见[实现说明](../docs/STAGE2_CONTENTION_RECOVERY_V1_20261029.md)。
 
-首版来源为17af源码和B1参数，曾逐文件等同于提交 `f049728` 中的 `src/rmtc_bot`；后续版本沿革见下文，当前源码已不再逐字节等同该祖先提交。当前源码及配置校验值在 `SOURCE_MANIFEST.json`，其中历史二进制哈希不代表本轮候选构建。
+首版来源为17af源码和B1参数，曾逐文件等同于提交 `f049728` 中的 `src/rmtc_bot`；后续版本沿革见下文，当前源码已不再逐字节等同该祖先提交。当前源码及配置校验值在 `SOURCE_MANIFEST.json`，其中历史二进制哈希仅用于版本沿革，不代表当前配置身份。
 
 从仓库根构建并运行：
 
@@ -12,7 +12,13 @@
 ./run_contestant.sh A 2
 ```
 
-也可在构建后运行 `./run_stage2_final.sh A`。脚本使用仓库相对位置寻找自己的安装产物，不依赖维护者绝对路径；后置ROS参数可显式覆盖配置。当前源码候选须先构建才会被入口使用；关闭新功能可传入 `-p movement_blocked_recovery:=false`。
+也可在构建后运行 `./run_stage2_final.sh A`。脚本使用仓库相对位置寻找自己的安装产物，不依赖维护者绝对路径；后置ROS参数可显式覆盖配置。通用争格脱困在C++、节点和正式配置中均默认关闭；仅实验时显式开启：
+
+```bash
+./run_contestant.sh A 2 -p movement_blocked_recovery:=true
+```
+
+不附加该覆盖参数即使用关闭状态；旧的 `resource_blocked_recovery: true` 是另一项既有资源恢复策略，继续保留。
 
 需要 Ubuntu 22.04、ROS 2 Humble、colcon、nlohmann-json3-dev、libcurl4-openssl-dev，完整安装说明见根README。非系统位置的依赖可通过CMake参数指定，例如 `./build_stage2.sh -Dnlohmann_json_DIR=/依赖前缀/lib/cmake/nlohmann_json`；仓库不写死本机依赖目录。
 

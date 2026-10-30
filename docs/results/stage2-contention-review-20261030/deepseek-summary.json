@@ -1,0 +1,720 @@
+{
+  "status": "summarized_existing_results_at_user_request",
+  "planned_matches": 48,
+  "qualified_matches": 28,
+  "primary_pairs": 14,
+  "complete_but_model_degraded": 4,
+  "interrupted": 4,
+  "not_started": 12,
+  "remaining_to_complete_original_matrix": 20,
+  "controlled_decisions": 56000,
+  "before": {
+    "score": 42.67857142857143,
+    "R": 53.57142857142857,
+    "D": 991.5306122449285,
+    "M": 2.857142857142857,
+    "rank": 2,
+    "deaths": 6.857142857142857,
+    "blocked_receipts": 86.64285714285714,
+    "top2": 11,
+    "strict_first": 4,
+    "max_blocked_streak": 262,
+    "total_contention_detours": 0,
+    "max_p95_ms": 1.726286
+  },
+  "after": {
+    "score": 41.785714285714285,
+    "R": 51.42857142857143,
+    "D": 1124.3877551020714,
+    "M": 2.7857142857142856,
+    "rank": 2.142857142857143,
+    "deaths": 8.5,
+    "blocked_receipts": 7.642857142857143,
+    "top2": 10,
+    "strict_first": 4,
+    "max_blocked_streak": 2,
+    "total_contention_detours": 55,
+    "max_p95_ms": 1.702852
+  },
+  "total_blocked": {
+    "before": 1213,
+    "after": 107
+  },
+  "total_deaths": {
+    "before": 96,
+    "after": 119
+  },
+  "score_up": 0,
+  "score_down": 2,
+  "rank_up": 2,
+  "rank_down": 2,
+  "ai": {
+    "before": {
+      "matches": 14,
+      "cars": 56,
+      "gateway_attempts": 3680,
+      "gateway_real_success": 3680,
+      "collected": 3681,
+      "http_success": 3680,
+      "accepted": 3674,
+      "applied": 3674,
+      "reasoning_chars": 0,
+      "timely_event_types": 343,
+      "timely_correct_events": 343,
+      "event_type_windows": 448,
+      "focal_timely_event_types": 112,
+      "focal_event_type_windows": 112,
+      "focal_timely_correct_events": 112,
+      "http_status": {
+        "200": 3680,
+        "429": 1
+      },
+      "errors": {
+        "model_schema_rejected": 6,
+        "http_error": 1
+      },
+      "focal_http_success": 238,
+      "focal_applied": 238,
+      "usage": {
+        "prompt_tokens": 5430727,
+        "completion_tokens": 202975,
+        "total_tokens": 5633702
+      }
+    },
+    "after": {
+      "matches": 14,
+      "cars": 56,
+      "gateway_attempts": 3758,
+      "gateway_real_success": 3758,
+      "collected": 3758,
+      "http_success": 3758,
+      "accepted": 3732,
+      "applied": 3732,
+      "reasoning_chars": 0,
+      "timely_event_types": 360,
+      "timely_correct_events": 360,
+      "event_type_windows": 448,
+      "focal_timely_event_types": 112,
+      "focal_event_type_windows": 112,
+      "focal_timely_correct_events": 112,
+      "http_status": {
+        "200": 3758
+      },
+      "errors": {
+        "model_schema_rejected": 26
+      },
+      "focal_http_success": 238,
+      "focal_applied": 238,
+      "usage": {
+        "prompt_tokens": 5589010,
+        "completion_tokens": 211243,
+        "total_tokens": 5800253
+      }
+    }
+  },
+  "paired_results": [
+    {
+      "map": "S01",
+      "seat": "A",
+      "rotation": 0,
+      "before": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1620.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 10,
+        "blocked_receipts": 4,
+        "max_same_edge_blocked_streak": 4,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.493209
+      },
+      "after": {
+        "score": 32.5,
+        "R": 30.0,
+        "D": 885.0,
+        "M": 2,
+        "rank": 4,
+        "strict_first": false,
+        "deaths": 6,
+        "blocked_receipts": 16,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 8,
+        "detour_successes": 8,
+        "p95_ms": 1.652909
+      },
+      "delta": {
+        "score": -10.0,
+        "R": -20.0,
+        "D": -735.0,
+        "M": -1,
+        "rank": 2,
+        "blocked_receipts": 12,
+        "max_same_edge_blocked_streak": -2,
+        "deaths": -4
+      }
+    },
+    {
+      "map": "S01",
+      "seat": "B",
+      "rotation": 1,
+      "before": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1210.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 8,
+        "blocked_receipts": 10,
+        "max_same_edge_blocked_streak": 10,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.478391
+      },
+      "after": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1750.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 9,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.534136
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 540.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -10,
+        "max_same_edge_blocked_streak": -10,
+        "deaths": 1
+      }
+    },
+    {
+      "map": "S01",
+      "seat": "C",
+      "rotation": 2,
+      "before": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 1085.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 6,
+        "blocked_receipts": 7,
+        "max_same_edge_blocked_streak": 6,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.296599
+      },
+      "after": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 740.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 6,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.359156
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": -345.0,
+        "M": 0,
+        "rank": -1,
+        "blocked_receipts": -7,
+        "max_same_edge_blocked_streak": -6,
+        "deaths": 0
+      }
+    },
+    {
+      "map": "S01",
+      "seat": "D",
+      "rotation": 3,
+      "before": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 1145.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 9,
+        "blocked_receipts": 90,
+        "max_same_edge_blocked_streak": 57,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.291038
+      },
+      "after": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1140.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 5,
+        "blocked_receipts": 1,
+        "max_same_edge_blocked_streak": 1,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.263326
+      },
+      "delta": {
+        "score": -2.5,
+        "R": -10.0,
+        "D": -5.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -89,
+        "max_same_edge_blocked_streak": -56,
+        "deaths": -4
+      }
+    },
+    {
+      "map": "S02",
+      "seat": "A",
+      "rotation": 0,
+      "before": {
+        "score": 32.5,
+        "R": 30.0,
+        "D": 895.0,
+        "M": 2,
+        "rank": 3,
+        "strict_first": false,
+        "deaths": 3,
+        "blocked_receipts": 170,
+        "max_same_edge_blocked_streak": 124,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.671564
+      },
+      "after": {
+        "score": 32.5,
+        "R": 30.0,
+        "D": 800.0,
+        "M": 2,
+        "rank": 3,
+        "strict_first": false,
+        "deaths": 7,
+        "blocked_receipts": 49,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 27,
+        "detour_successes": 24,
+        "p95_ms": 1.674439
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": -95.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -121,
+        "max_same_edge_blocked_streak": -122,
+        "deaths": 4
+      }
+    },
+    {
+      "map": "S02",
+      "seat": "B",
+      "rotation": 1,
+      "before": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 600.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 5,
+        "blocked_receipts": 180,
+        "max_same_edge_blocked_streak": 136,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.524567
+      },
+      "after": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 1760.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 13,
+        "blocked_receipts": 2,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 1,
+        "detour_successes": 1,
+        "p95_ms": 1.511393
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 1160.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -178,
+        "max_same_edge_blocked_streak": -134,
+        "deaths": 8
+      }
+    },
+    {
+      "map": "S02",
+      "seat": "C",
+      "rotation": 2,
+      "before": {
+        "score": 35.0,
+        "R": 40.0,
+        "D": 640.0,
+        "M": 2,
+        "rank": 4,
+        "strict_first": false,
+        "deaths": 4,
+        "blocked_receipts": 110,
+        "max_same_edge_blocked_streak": 110,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.541679
+      },
+      "after": {
+        "score": 35.0,
+        "R": 40.0,
+        "D": 680.0,
+        "M": 2,
+        "rank": 4,
+        "strict_first": false,
+        "deaths": 7,
+        "blocked_receipts": 6,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 3,
+        "detour_successes": 3,
+        "p95_ms": 1.356661
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 40.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -104,
+        "max_same_edge_blocked_streak": -108,
+        "deaths": 3
+      }
+    },
+    {
+      "map": "S02",
+      "seat": "D",
+      "rotation": 3,
+      "before": {
+        "score": 50.0,
+        "R": 80.0,
+        "D": 570.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 3,
+        "blocked_receipts": 142,
+        "max_same_edge_blocked_streak": 110,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.254078
+      },
+      "after": {
+        "score": 50.0,
+        "R": 80.0,
+        "D": 1100.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 11,
+        "blocked_receipts": 2,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 1,
+        "detour_successes": 1,
+        "p95_ms": 1.426202
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 530.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -140,
+        "max_same_edge_blocked_streak": -108,
+        "deaths": 8
+      }
+    },
+    {
+      "map": "S03",
+      "seat": "A",
+      "rotation": 0,
+      "before": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 860.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 8,
+        "blocked_receipts": 51,
+        "max_same_edge_blocked_streak": 26,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.632099
+      },
+      "after": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 1340.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 10,
+        "blocked_receipts": 13,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 6,
+        "detour_successes": 6,
+        "p95_ms": 1.637168
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 480.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -38,
+        "max_same_edge_blocked_streak": -24,
+        "deaths": 2
+      }
+    },
+    {
+      "map": "S03",
+      "seat": "B",
+      "rotation": 1,
+      "before": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1195.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 10,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.522293
+      },
+      "after": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1195.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 10,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.402267
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 0.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "deaths": 0
+      }
+    },
+    {
+      "map": "S03",
+      "seat": "C",
+      "rotation": 2,
+      "before": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 650.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 7,
+        "blocked_receipts": 140,
+        "max_same_edge_blocked_streak": 140,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.603936
+      },
+      "after": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 900.0,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 8,
+        "blocked_receipts": 2,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 1,
+        "detour_successes": 1,
+        "p95_ms": 1.344167
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 250.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -138,
+        "max_same_edge_blocked_streak": -138,
+        "deaths": 1
+      }
+    },
+    {
+      "map": "S03",
+      "seat": "D",
+      "rotation": 3,
+      "before": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1111.428571429,
+        "M": 3,
+        "rank": 3,
+        "strict_first": false,
+        "deaths": 10,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.336974
+      },
+      "after": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 1261.428571429,
+        "M": 3,
+        "rank": 2,
+        "strict_first": false,
+        "deaths": 10,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.517253
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 150.0,
+        "M": 0,
+        "rank": -1,
+        "blocked_receipts": 0,
+        "max_same_edge_blocked_streak": 0,
+        "deaths": 0
+      }
+    },
+    {
+      "map": "S04",
+      "seat": "A",
+      "rotation": 0,
+      "before": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 1680.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 9,
+        "blocked_receipts": 17,
+        "max_same_edge_blocked_streak": 10,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.658759
+      },
+      "after": {
+        "score": 45.0,
+        "R": 60.0,
+        "D": 1520.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 9,
+        "blocked_receipts": 2,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 1,
+        "detour_successes": 1,
+        "p95_ms": 1.677134
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": -160.0,
+        "M": 0,
+        "rank": 0,
+        "blocked_receipts": -15,
+        "max_same_edge_blocked_streak": -8,
+        "deaths": 0
+      }
+    },
+    {
+      "map": "S04",
+      "seat": "B",
+      "rotation": 1,
+      "before": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 620.0,
+        "M": 3,
+        "rank": 1,
+        "strict_first": true,
+        "deaths": 4,
+        "blocked_receipts": 292,
+        "max_same_edge_blocked_streak": 262,
+        "contention_detours": 0,
+        "detour_successes": 0,
+        "p95_ms": 1.726286
+      },
+      "after": {
+        "score": 42.5,
+        "R": 50.0,
+        "D": 670.0,
+        "M": 3,
+        "rank": 3,
+        "strict_first": false,
+        "deaths": 8,
+        "blocked_receipts": 14,
+        "max_same_edge_blocked_streak": 2,
+        "contention_detours": 7,
+        "detour_successes": 7,
+        "p95_ms": 1.702852
+      },
+      "delta": {
+        "score": 0.0,
+        "R": 0.0,
+        "D": 50.0,
+        "M": 0,
+        "rank": 2,
+        "blocked_receipts": -278,
+        "max_same_edge_blocked_streak": -260,
+        "deaths": 4
+      }
+    }
+  ],
+  "raw_evidence_local_only": "experiments/remote-update-20261030/deepseek-20261030"
+}
