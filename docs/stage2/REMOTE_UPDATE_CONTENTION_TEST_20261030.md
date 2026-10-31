@@ -1,6 +1,6 @@
 # 远端更新与二阶段效果测试报告
 
-> 发布附件：[精简结果](results/stage2-contention-review-20261030/no-ai-summary.json)、[地图](results/stage2-contention-review-20261030/maps-no-ai.png)、[正式默认关闭启动核验](results/stage2-contention-review-20261030/default-off-entry-checks.json)。完整原始日志留在本地，未随提交上传。当前正式配置已按用户要求关闭通用争格恢复，以下保留当时前后对照的测试结果。
+> 发布附件：[精简结果](../results/stage2-contention-review-20261030/no-ai-summary.json)、[地图](../results/stage2-contention-review-20261030/maps-no-ai.png)、[正式默认关闭启动核验](../results/stage2-contention-review-20261030/default-off-entry-checks.json)。完整原始日志留在本地，未随提交上传。当前正式配置已按用户要求关闭通用争格恢复，以下保留当时前后对照的测试结果。
 
 日期：2026-10-30（Asia/Shanghai）。仓库由`4d632d39c8e60610a761cf0e2e9a71c00b3176ad`快进至`474d0f4fbbb46de536f4bfa8322d41b6d1350883`，提交标题为`feat(stage2): add contention recovery candidate on v2.4`。保留了原有未跟踪文档，没有提交或推送本轮实验文件。
 
@@ -59,7 +59,7 @@
 | N01 | 新非中心对称 | 42.500→42.500 | 50.00→50.00 | 1.25→1.25 | 3→3 | 50→2 |
 | N02 | 新非中心对称 | 41.775→43.125 | 52.50→52.50 | 1.75→1.50 | 3→3 | 350→2 |
 
-![地图及逐席位结果](results/stage2-contention-review-20261030/maps-no-ai.png)
+![地图及逐席位结果](../results/stage2-contention-review-20261030/maps-no-ai.png)
 
 ### 逐地图/席位结果
 

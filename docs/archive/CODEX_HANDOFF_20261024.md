@@ -43,7 +43,7 @@
 
 ### 1.3 三份官方 v1.1 PDF
 
-优先读 PDF；如果路径不可用，读 `docs/RULES_V1_1.md`，但不要把它当成完整原文。
+优先读 PDF；如果路径不可用，读 `docs/rules/RULES_V1_1.md`，但不要把它当成完整原文。
 
 ```text
 /home/miraculy/.dsh/attachments/v1/files/63/635a7aa0152684537bd831f58eb78559223b1ed6822597f3a426c5751145895a/RMTC 机甲⼤师图灵对决赛通信协议v1.1.pdf
@@ -107,18 +107,18 @@
 
 ### 3.1 已有分析文档
 
-- `docs/CODEX_REVIEW_v1.1.md`
+- `docs/archive/CODEX_REVIEW_v1.1.md`
   - 原 11 项复查清单 + 2026-10-23 团队补充节
-- `docs/CODEX_NEW_IDEAS_v1.1.md`
+- `docs/archive/CODEX_NEW_IDEAS_v1.1.md`
   - 6 个新方向 + 第 11 节“团队复查补充：当前策略不足、实证瓶颈与新增优化”
-- `docs/NEW_IDEA_IMPLEMENTATION.md`
+- `docs/research/NEW_IDEA_IMPLEMENTATION.md`
   - Codex 对上述两份文档的逐项判断、实施顺序、已完成实验
 - `VALIDATION.md`
   - 最新两节：事件版本、purity 互斥估值；以及历史批次
 - `AGENTS.md`
   - 最新状态与历史实验记录（注意：仍停在 `6332`/130）
-- `README.md`、`docs/STRATEGY.md`、`docs/EXPERIMENT_SYNTHESIS.md`、`docs/GOAL_ARCHIVE_2026-10-23.md`
-- `docs/RULES_V1_1.md`、`docs/SELFPLAY.md`、`docs/*_REVIEW.md`
+- `README.md`、`docs/stage2/STRATEGY.md`、`docs/research/EXPERIMENT_SYNTHESIS.md`、`docs/archive/GOAL_ARCHIVE_2026-10-23.md`
+- `docs/rules/RULES_V1_1.md`、`docs/guides/SELFPLAY.md`、`docs/*_REVIEW.md`
 
 ### 3.2 源码
 
@@ -255,7 +255,7 @@ P0-1 `mission_text`、P0-2 `effective_damage`、P1-1 purity 防御反伤奖励�
 
 ## 7. 你的报告需要包含
 
-建议写到新文件，例如 `docs/CODEX_INDEPENDENT_REVIEW_20261024.md`（不要覆盖已有文档）：
+建议写到新文件，例如 `docs/archive/CODEX_INDEPENDENT_REVIEW_20261024.md`（不要覆盖已有文档）：
 
 1. **执行摘要**：3–5 条，直接回答“当前最需要做什么/哪些结论成立/Codex 进度是否真实”。
 2. **版本与状态核对**：build、测试、源码、文档是否一致；`994515d8` vs `6332c49e` 的差异。

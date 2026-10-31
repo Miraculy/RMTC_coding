@@ -38,7 +38,7 @@ SHA-256：`17af71e3389cbdb6478a959e391b0aa462d04fbcc5341846e1d8885c1cea4a8c`。
 
 完整性数字来自筛选后的合格场；原始失败与异常已另行保留。历史场次、不同版本及同图多席位不能合并成大量独立地图样本。
 
-证据：[得分贡献复盘](SCORE_RETROSPECTIVE_20261024.md)、[异质四策略对照](HETEROGENEOUS_BENCHMARK_20261024.md)、[公平条件复评](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)、[历史验证记录](../VALIDATION.md)。
+证据：[得分贡献复盘](../research/SCORE_RETROSPECTIVE_20261024.md)、[异质四策略对照](../research/HETEROGENEOUS_BENCHMARK_20261024.md)、[公平条件复评](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)、[历史验证记录](../../VALIDATION.md)。
 
 ## 4. 为什么尚不能判断有稳定的竞争优势
 
@@ -79,7 +79,7 @@ map62573-D尤其典型：本车41.4→45分，却从第一变第二；固定程�
 
 因此，现阶段继续增加一个探索权重、延长搜索深度或直接开启旧开关，缺少足够理由。下一步需要解释：新选择会保留哪些原有收益、赶上哪些额外机会，以及为何不会因路线和对手响应而失去更多。
 
-来源：[资源阶段实验](RESOURCE_PHASE_REVIEW_20261024.md)、[公平条件复评](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)、[focus与竞争开关筛查](STAGE2_RESOURCE_FOCUS_SCREEN_20261026.md)。
+来源：[资源阶段实验](../research/RESOURCE_PHASE_REVIEW_20261024.md)、[公平条件复评](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)、[focus与竞争开关筛查](STAGE2_RESOURCE_FOCUS_SCREEN_20261026.md)。
 
 ## 5. 值得优化的方向与优先级
 
@@ -107,7 +107,7 @@ map62573-D尤其典型：本车41.4→45分，却从第一变第二；固定程�
 
 **这里的目标是更早发现并取得仍有竞争机会的资源，同时保住普通资源链；新看到多少格只能作为诊断。** 对未来候选应看最终R、高值任务率及总分/名次，不能把预测收益当实际收益。
 
-来源：[资源窗口复盘](RESOURCE_BOTTLENECK_REFLECTION_20261024.md)、[公平机会分类](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)。
+来源：[资源窗口复盘](../research/RESOURCE_BOTTLENECK_REFLECTION_20261024.md)、[公平机会分类](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)。
 
 ### 5.2 总分与排名首选：给僵持开火补上后续机会成本
 
@@ -126,7 +126,7 @@ map62573-D尤其典型：本车41.4→45分，却从第一变第二；固定程�
 
 已有`score_aware_combat`、D封顶、死亡储备和末期同分价值都应继续纳入。D达到500后仍可能因死亡扣减，不能简单规定“到500就永远不打”。更有针对性的方案是限制高机会成本交战，按剩余风险调整储备，而不是只追伤害或只追存活。
 
-来源：[异质反例及单模块消融](HETEROGENEOUS_BENCHMARK_20261024.md)；源码位置：`baseline/src/rmtc_bot/src/core.cpp`约1372、1589、1770–1850行，`baseline`相对实验目录`experiments/stage2-fair-20261025`。
+来源：[异质反例及单模块消融](../research/HETEROGENEOUS_BENCHMARK_20261024.md)；源码位置：`baseline/src/rmtc_bot/src/core.cpp`约1372、1589、1770–1850行，`baseline`相对实验目录`experiments/stage2-fair-20261025`。
 
 ### 5.3 将竞争与失败反馈纳入路线，而非独立叠加折扣
 
@@ -138,7 +138,7 @@ map62573-D尤其典型：本车41.4→45分，却从第一变第二；固定程�
 
 因此更合理的定位是：保留回执驱动的可执行性检查，将它与到达估值、目标承诺期限和备选路线连接。单独开启更复杂ETA，或仅取消探索保持奖励，已有覆盖不足证据。
 
-来源：[恢复方案及边界](RESOURCE_RECOVERY_20261025.md)、[资源专项失败案例](RESOURCE_OPTIMIZATION_20261024.md)、[重放覆盖筛查](STAGE2_RESOURCE_FOCUS_SCREEN_20261026.md)。
+来源：[恢复方案及边界](../research/RESOURCE_RECOVERY_20261025.md)、[资源专项失败案例](../research/RESOURCE_OPTIMIZATION_20261024.md)、[重放覆盖筛查](STAGE2_RESOURCE_FOCUS_SCREEN_20261026.md)。
 
 ### 5.4 事件能力值得保留，优化重点在可用时间和实际价值
 
@@ -150,7 +150,7 @@ v1.2堡垒位置补充与现有实际矩形解析、缺矩形拒绝、跨场清�
 
 更广泛的事件优化应关注“解释及时→路线可达→效果来得及使用→资源/任务/战斗实际增分”整条链。当前正常事件场有多次无增分，不能从定向幻术正例推断普遍优势。正式AI资格仍需主办方网关确认；本地HTTP成功和练习裁判任务分不能替代它。
 
-来源：[堡垒核验](STAGE2_V12_GEOMETRY_REVIEW_20261026.md)、[历史真实模型配对](../VALIDATION.md)。
+来源：[堡垒核验](STAGE2_V12_GEOMETRY_REVIEW_20261026.md)、[历史真实模型配对](../../VALIDATION.md)。
 
 ## 6. 对后续研究方法的建议
 

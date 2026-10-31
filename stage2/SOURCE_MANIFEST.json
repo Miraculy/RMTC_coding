@@ -100,8 +100,8 @@
     "decision": "User requested removing generic contention recovery from formal defaults after evaluating the update. The implementation remains available only by explicit parameter opt-in.",
     "other_profile_parameters_unchanged": true,
     "reports": [
-      "../docs/REMOTE_UPDATE_CONTENTION_TEST_20261030.md",
-      "../docs/STAGE2_DEEPSEEK_CONTENTION_TEST_20261030.md"
+      "../docs/stage2/REMOTE_UPDATE_CONTENTION_TEST_20261030.md",
+      "../docs/stage2/STAGE2_DEEPSEEK_CONTENTION_TEST_20261030.md"
     ]
   }
 }

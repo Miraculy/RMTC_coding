@@ -34,10 +34,10 @@
 ## 交付物与后续判断
 
 - [详细优化思路、逐场结果及完整性说明](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)
-- [复现说明](../experiments/stage2-fair-20261025/REPRODUCE.md)
-- [候选源码](../experiments/stage2-fair-20261025/candidate/src/rmtc_bot/src/core.cpp)
-- [完整候选补丁](../experiments/stage2-fair-20261025/results/retrieval-candidate.patch)
-- [完整配对审计](../experiments/stage2-fair-20261025/results/retrieval-paired-audit.json)
-- [可移交归档](../test-results/stage2-fair-20261026/artifacts.tar.gz)
+- [复现说明](../../experiments/stage2-fair-20261025/REPRODUCE.md)
+- [候选源码](../../experiments/stage2-fair-20261025/candidate/src/rmtc_bot/src/core.cpp)
+- [完整候选补丁](../../experiments/stage2-fair-20261025/results/retrieval-candidate.patch)
+- [完整配对审计](../../experiments/stage2-fair-20261025/results/retrieval-paired-audit.json)
+- [可移交归档](../../test-results/stage2-fair-20261026/artifacts.tar.gz)
 
 本轮完成了复评和一个完整新方案的实现、验证及否决，尚未实现用户期望的普遍资源提升。下一步若继续，优先研究带有限已知收益保障的区域覆盖次序，并以发现提前量及实际取回量共同验证；这一方向尚未编码、未开实验。已成功方案交付后暂停的约定保持有效。本轮没有成功方案需要推广，旧长期目标仍暂停。

@@ -26,7 +26,7 @@
 
 恢复机制只有在本车连续两次匹配E_BLOCKED、仍有当前可见且短途的备选资源等条件下改道；已有事件、无备选或风险条件不满足时回到原逻辑。没有使用全图、对手私有数据或隐藏资源坐标。
 
-完整依据：[恢复方案](RESOURCE_RECOVERY_20261025.md)、[公平复评](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)、[异质对照](HETEROGENEOUS_BENCHMARK_20261024.md)、[竞争力分析](STAGE2_COMPETITIVENESS_REVIEW_20261027.md)。各组分布、版本不同，不能合并成一个正式胜率，也不将局部增分相加。
+完整依据：[恢复方案](../research/RESOURCE_RECOVERY_20261025.md)、[公平复评](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)、[异质对照](../research/HETEROGENEOUS_BENCHMARK_20261024.md)、[竞争力分析](STAGE2_COMPETITIVENESS_REVIEW_20261027.md)。各组分布、版本不同，不能合并成一个正式胜率，也不将局部增分相加。
 
 ## 可复编和可启动交付
 
@@ -43,15 +43,15 @@
 
 ## 本轮验证与边界
 
-发布验证已完成，记录在 [validation.json](results/stage2-final-20261027/validation.json)：
+发布验证已完成，记录在 [validation.json](../results/stage2-final-20261027/validation.json)：
 
 - 独立Release构建通过，12文件与`f049728`原始内容逐字节一致；44项参数与配置清单相符。
 - 136项核心、14项本地HTTP测试全部通过，2个CTest目标通过。colcon汇总的152包含150个GTest及2个CTest目标，不是152项独立算法测试。
-- 从仓库外目录通过`run_contestant.sh`启动B席位发布版，查询真实ROS参数并检查实际可执行路径；另以C席位核验恢复关闭、总Tick=321的显式覆盖。每例核对47项实际参数，两例通过；AI关闭、零感知、零比赛。见 [entry-smoke.json](results/stage2-final-20261027/entry-smoke.json)。
+- 从仓库外目录通过`run_contestant.sh`启动B席位发布版，查询真实ROS参数并检查实际可执行路径；另以C席位核验恢复关闭、总Tick=321的显式覆盖。每例核对47项实际参数，两例通过；AI关闭、零感知、零比赛。见 [entry-smoke.json](../results/stage2-final-20261027/entry-smoke.json)。
 - 根一阶段源码相对当前HEAD无变动；原根安装程序仍是17af。新二阶段构建程序SHA-256为`4e34c1543ecc9a42677c5a4df422fa0075e2ed59bec2a966206ae8a8660239da`。构建产物与历史17af字节哈希不同，明确分别记录，不冒称该新哈希已跑过历史比赛。
 - 首次测试发现旧归档同名包，零测试；限定源码后通过。入口检查器先遇到Humble接口及上下文兼容问题，修正检查器后通过，早期错误记录于验证摘要；未因此改变参赛源码。
 
-本轮没有重跑已完成比赛，没有使用未见确认集或调用外部模型。历史赛绩与本轮发布验证分开记录，历史选择摘要见 [selection.json](results/stage2-final-20261027/selection.json)。
+本轮没有重跑已完成比赛，没有使用未见确认集或调用外部模型。历史赛绩与本轮发布验证分开记录，历史选择摘要见 [selection.json](../results/stage2-final-20261027/selection.json)。
 
 尚未建立对独立强队的稳定排名优势，正式网关资格、完整事件矩阵与全部相对席位排列仍未覆盖。堡垒驻留奖励最后可用窗口的已知边界本次不夹带修复。最终选择不等于宣称排名优化目标已经普遍实现。
 

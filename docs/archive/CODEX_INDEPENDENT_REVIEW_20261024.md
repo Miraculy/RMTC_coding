@@ -1,6 +1,6 @@
 # RMTC v1.1 独立复查报告（2026-10-24）
 
-本报告执行 `docs/CODEX_HANDOFF_20261024.md` 的第一轮要求；其内容与用户提供的 `../rules/CODEX_HANDOFF_20261024.md` 已逐字核对相同。报告中的项目路径均相对仓库根目录；官方附件位于仓库同级的 `../rules/`。临时实验根目录记为 `$AUDIT`，本机实际为 `/tmp/rmtc-independent-20261024-38siqanh`。`$AUDIT` 仅是下文命令的占位符，复验时应换成自己的目录。
+本报告执行 `docs/archive/CODEX_HANDOFF_20261024.md` 的第一轮要求；其内容与用户提供的 `../rules/CODEX_HANDOFF_20261024.md` 已逐字核对相同。报告中的项目路径均相对仓库根目录；官方附件位于仓库同级的 `../rules/`。临时实验根目录记为 `$AUDIT`，本机实际为 `/tmp/rmtc-independent-20261024-38siqanh`。`$AUDIT` 仅是下文命令的占位符，复验时应换成自己的目录。
 
 ## 1. 执行摘要
 
@@ -290,7 +290,7 @@ C的首次动作分歧在Tick11，本车(8,16)，目标(11,15)，原首步up被r
 ### A.1 已读文件
 
 - 官方三PDF：赛事规则 §2.3、4–11、12–14；协议 §3/3.1、4–6、8；教程第三–五、七–十。文本抽取到stdout；赛事规则第13页另渲染核对。
-- `AGENTS.md`、`README.md`、`docs/DEVELOPMENT_NOTES.md`、本轮交接书；旧 `CODEX_REVIEW_v1.1.md`、`CODEX_NEW_IDEAS_v1.1.md`（包括团队补充）、`NEW_IDEA_IMPLEMENTATION.md`。
+- `AGENTS.md`、`README.md`、`docs/guides/DEVELOPMENT_NOTES.md`、本轮交接书；旧 `CODEX_REVIEW_v1.1.md`、`CODEX_NEW_IDEAS_v1.1.md`（包括团队补充）、`NEW_IDEA_IMPLEMENTATION.md`。
 - `VALIDATION.md` 的版本/相关批次记载（重点末两节）及 `STRATEGY.md`、`RULES_V1_1.md`、`SELFPLAY.md`、`EXPERIMENT_SYNTHESIS.md`、`GOAL_ARCHIVE_2026-10-23.md`；资源、死亡、动态火线、僵持和Tick专题报告。未把历史数字转称本轮原始日志审计。
 - 全部三份C++实现、两头文件、两个GTest、CMake；`event_revision_benchmark.cpp` 的显式付费边界；opening_route/opening_opportunity/purity_joint/strategy_eval/compare_eval/tick_audit等工具和ROS修订脚本。
 - 裁判包manifest及公开启动/练习驱动代码；未逆向裁判二进制，未向参赛端提供测试配置、裁判日志或其他车记忆。
@@ -362,4 +362,4 @@ python3 tools/compare_eval.py \
 
 ## 附录 B. 原目录未修改说明
 
-原目录原有49个普通文件逐一SHA-256与执行前清单一致；沙盒源码副本也与这49个文件一致。原源码、配置、测试、旧报告、启动脚本、AGENTS和目标归档均未修改；没有在原目录构建或生成test-results。唯一新增文件为`docs/CODEX_INDEPENDENT_REVIEW_20261024.md`。本轮未付费调用AI、未装系统依赖、未修改goal工具状态，全部实验和附加审计脚本在`$AUDIT`。
+原目录原有49个普通文件逐一SHA-256与执行前清单一致；沙盒源码副本也与这49个文件一致。原源码、配置、测试、旧报告、启动脚本、AGENTS和目标归档均未修改；没有在原目录构建或生成test-results。唯一新增文件为`docs/archive/CODEX_INDEPENDENT_REVIEW_20261024.md`。本轮未付费调用AI、未装系统依赖、未修改goal工具状态，全部实验和附加审计脚本在`$AUDIT`。

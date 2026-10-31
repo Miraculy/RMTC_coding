@@ -84,10 +84,10 @@
 
 ## 实现入口
 
-- [第一阶段启动入口](../run_contestant.sh)和[根包 node.cpp](../src/rmtc_bot/src/node.cpp)：启动默认值、帧分流、发布和日志。
-- [core.cpp](../src/rmtc_bot/src/core.cpp)：世界更新、规划分支调度和通用规划器。
-- [stage1_subgoal.cpp](../src/rmtc_bot/src/stage1_subgoal.cpp)：e075 候选、知识签名复用、假想地图及风险比较。
-- [stage1_joint.cpp](../src/rmtc_bot/src/stage1_joint.cpp)：资源与视野联合路线。
-- [stage1_planner.cpp](../src/rmtc_bot/src/stage1_planner.cpp)：预算内资源路线、收益上界及收尾保护。
+- [第一阶段启动入口](../../run_contestant.sh)和[根包 node.cpp](../../src/rmtc_bot/src/node.cpp)：启动默认值、帧分流、发布和日志。
+- [core.cpp](../../src/rmtc_bot/src/core.cpp)：世界更新、规划分支调度和通用规划器。
+- [stage1_subgoal.cpp](../../src/rmtc_bot/src/stage1_subgoal.cpp)：e075 候选、知识签名复用、假想地图及风险比较。
+- [stage1_joint.cpp](../../src/rmtc_bot/src/stage1_joint.cpp)：资源与视野联合路线。
+- [stage1_planner.cpp](../../src/rmtc_bot/src/stage1_planner.cpp)：预算内资源路线、收益上界及收尾保护。
 
 本文为当前实现的运行说明，不新增比赛、模型调用或测试结论，也不改变算法、Prompt、配置及源码。

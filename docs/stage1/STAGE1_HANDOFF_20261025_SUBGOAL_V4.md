@@ -80,7 +80,7 @@
 ## 阅读入口
 
 - `AGENTS.md`最新条目及本文件。
-- 原v4说明：`docs/STAGE1_SUBGOAL_IMPLEMENTATION_20261025.md`
-- 文献/算法判断：`docs/STAGE1_PAPER_ALGORITHM_REVIEW_20261025.md`
-- 前一轮观测路线失败实验：`docs/STAGE1_VIEWROUTE_IMPLEMENTATION_20261025.md`（不是本轮主目录）。
+- 原v4说明：`docs/stage1/STAGE1_SUBGOAL_IMPLEMENTATION_20261025.md`
+- 文献/算法判断：`docs/stage1/STAGE1_PAPER_ALGORITHM_REVIEW_20261025.md`
+- 前一轮观测路线失败实验：`docs/stage1/STAGE1_VIEWROUTE_IMPLEMENTATION_20261025.md`（不是本轮主目录）。
 - 不读或输出API密钥；本轮一阶段不调用大模型。不要生成/查看预留3000确认集。

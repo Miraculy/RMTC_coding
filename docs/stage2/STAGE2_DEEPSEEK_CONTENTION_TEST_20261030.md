@@ -1,6 +1,6 @@
 # 四车DeepSeek二阶段更新对照：已有结果与余额中断说明
 
-> 发布附件：[精简结果](results/stage2-contention-review-20261030/deepseek-summary.json)、[地图](results/stage2-contention-review-20261030/maps-deepseek.png)、[正式默认关闭启动核验](results/stage2-contention-review-20261030/default-off-entry-checks.json)。完整原始日志留在本地，未随提交上传。当前正式配置已按用户要求关闭通用争格恢复，以下保留当时前后对照的测试结果。
+> 发布附件：[精简结果](../results/stage2-contention-review-20261030/deepseek-summary.json)、[地图](../results/stage2-contention-review-20261030/maps-deepseek.png)、[正式默认关闭启动核验](../results/stage2-contention-review-20261030/default-off-entry-checks.json)。完整原始日志留在本地，未随提交上传。当前正式配置已按用户要求关闭通用争格恢复，以下保留当时前后对照的测试结果。
 
 日期：2026-10-30。更新前`4d632d39c8e60610a761cf0e2e9a71c00b3176ad`，更新后`474d0f4fbbb46de536f4bfa8322d41b6d1350883`。用户要求接入DS测试，后因余额不足明确选择“先汇总已有结果”，本轮已停止，不自动续跑。正式源码、配置、入口未额外修改。
 
@@ -57,7 +57,7 @@
 | S04-A | 45→45 | 60→60 | 3→3 | 1→1 | 10→2 | 1/1 |
 | S04-B | 42.5→42.5 | 50→50 | 3→3 | 1→3 | 262→2 | 7/7 |
 
-![地图及结果，未评估和排除案例已标注](results/stage2-contention-review-20261030/maps-deepseek.png)
+![地图及结果，未评估和排除案例已标注](../results/stage2-contention-review-20261030/maps-deepseek.png)
 
 ## DS真实调用、正确性与时效
 

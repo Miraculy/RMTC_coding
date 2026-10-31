@@ -1,6 +1,6 @@
 # Codex 补充复查：11 项之外的 6 个新方向
 
-> 配套文档：`docs/CODEX_REVIEW_v1.1.md`（已裁剪为 P0-1、P0-2、P1-1～P1-4、P2-1～P2-5）。
+> 配套文档：`docs/archive/CODEX_REVIEW_v1.1.md`（已裁剪为 P0-1、P0-2、P1-1～P1-4、P2-1～P2-5）。
 > 本文只记录**清单之外**的新思路，不重复那 11 项。
 > 当前构建 SHA-256：`5edc241f63b822ca2bf3fbebd69bb46b0b633ac61b60a9faf662369360a50b55`。
 > 本次没有修改任何已有文件；只确认了容器内 `/root/rmtc_practice` 裁判端和 `/root/ros2_ws/install/.../contestant` 选手端可用。若实际运行，请把 `--workspace` / `log_dir` 指到 `/tmp`，不要写入仓库。

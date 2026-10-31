@@ -49,7 +49,7 @@ docker exec -it ros2_humble_gazebo bash
 cd /root/ros2_ws
 ```
 
-现有 Compose 使用 host 网络，静态 IP 在宿主机有线网卡设置，ROS 和 AI 环境在运行程序的容器终端设置。虚拟机通常需要桥接到物理有线网卡，并在运行 ROS 的 Ubuntu 来宾中核对分配 IP；宿主机与来宾不能重复使用同一个静态 IP。SSH 可访问不代表 DDS 已双向连通。更多本地环境说明见 [开发环境记录](docs/DEVELOPMENT_NOTES.md)。
+现有 Compose 使用 host 网络，静态 IP 在宿主机有线网卡设置，ROS 和 AI 环境在运行程序的容器终端设置。虚拟机通常需要桥接到物理有线网卡，并在运行 ROS 的 Ubuntu 来宾中核对分配 IP；宿主机与来宾不能重复使用同一个静态 IP。SSH 可访问不代表 DDS 已双向连通。更多本地环境说明见 [开发环境记录](docs/guides/DEVELOPMENT_NOTES.md)。
 
 ## 3. 目录、主要模块和运行逻辑
 
@@ -71,7 +71,14 @@ cd /root/ros2_ws
 │   ├── SOURCE_MANIFEST.json      # 当前源码和策略配置校验清单
 │   └── COLCON_IGNORE             # 避免根工作空间扫描到同名包
 ├── tools/                       # 开发联调、评估和审计脚本
-├── docs/                        # 既有策略说明及历史验证记录
+├── docs/                        # 分类文档，入口为 docs/README.md
+│   ├── guides/                  # 环境与开发指南
+│   ├── rules/                   # 规则与协议对照
+│   ├── stage1/                  # 第一阶段流程、源码解析和验证
+│   ├── stage2/                  # 第二阶段流程、源码解析和发布记录
+│   ├── research/                # 资源、战斗、得分等专项研究
+│   ├── archive/                 # 历史任务、复查清单与交接
+│   └── results/                 # 各批次结果与证据附件
 ├── build_contestant.sh           # 依次构建一阶段和二阶段
 ├── build_stage2.sh               # 单独构建二阶段
 ├── run_contestant.sh             # 根据阶段分派启动入口
@@ -90,9 +97,11 @@ cd /root/ros2_ws
 
 程序仅使用本队专属感知和协议允许的公开信息，不把裁判全图、其他席位私有数据或观赛画面作为策略输入。当前实现的已知限制见第 8 节。
 
+分类阅读入口见[文档索引](docs/README.md)，其中包含两阶段流程、源码解析、规则对照和历史验证资料。
+
 ### 3.1 第一阶段每 Tick 执行流程
 
-本节另有可独立阅读的[第一阶段每 Tick 执行流程](docs/STAGE1_TICK_FLOW.md)。
+本节另有可独立阅读的[第一阶段每 Tick 执行流程](docs/stage1/STAGE1_TICK_FLOW.md)。
 
 当前正式入口是 `./run_contestant.sh A 1`，运行根工作空间的 `install/rmtc_bot/` 安装包。脚本设置 `team=A`、`stage=1`、`max_ticks=100`，不自动加载开发模板 YAML；三个第一阶段规划开关使用根包 `node.cpp` 中的默认值 `true`。以下按没有额外参数覆盖时说明，标准节奏为100 ms/Tick。
 
@@ -176,7 +185,7 @@ cd /root/ros2_ws
 
 ### 3.2 第二阶段每 Tick 执行流程
 
-本节另有可独立阅读的[第二阶段每 Tick 执行流程](docs/STAGE2_TICK_FLOW.md)。
+本节另有可独立阅读的[第二阶段每 Tick 执行流程](docs/stage2/STAGE2_TICK_FLOW.md)。
 
 当前正式入口是 `./run_contestant.sh <席位> 2`，它转入 `run_stage2_final.sh`，加载 `stage2/config/final.yaml`。以下按该配置、没有额外参数覆盖时说明；默认比赛长度为500 Tick，标准节奏为500 ms/Tick。
 
@@ -506,8 +515,8 @@ python3 tools/verify_stage2_release.py
 | AI 内容被拒绝 | 查看 `ai` 日志的错误码；如为 `model_output_truncated`，说明输出被截断，不应在正式赛中擅自突破512限制 |
 | 换场后拒绝动作 | 残留旧进程、旧域、旧席位、旧令牌或旧场次数据 |
 
-`tools/integration.py`、`tools/wire_test.py` 含维护者容器路径，未经适配不能作为任意环境的通用入口。历史完整验证范围见 [VALIDATION.md](VALIDATION.md)，四车开发方法见 [SELFPLAY.md](docs/SELFPLAY.md)。
+`tools/integration.py`、`tools/wire_test.py` 含维护者容器路径，未经适配不能作为任意环境的通用入口。历史完整验证范围见 [VALIDATION.md](VALIDATION.md)，四车开发方法见 [SELFPLAY.md](docs/guides/SELFPLAY.md)。
 
 ## 8. 当前策略和已知限制
 
-第一阶段使用 e075；历史练习结果见 [阶段一验证摘要](docs/STAGE1_E075_VALIDATION.md)。二阶段保留 v2.4 组合，源码和53项策略参数以 [SOURCE_MANIFEST.json](stage2/SOURCE_MANIFEST.json)、[final.yaml](stage2/config/final.yaml) 为准：资源受阻恢复、观察绕行、资源到达概率、洁身条件防御、天使条件回血开启；通用移动争格恢复 `movement_blocked_recovery=false`。两种恢复开关不同，旧 `resource_blocked_recovery=true` 保留。版本沿革见 [二阶段说明](stage2/README.md)、[2026-10-30 复评](docs/STAGE2_DEEPSEEK_CONTENTION_TEST_20261030.md)，历史成绩不直接归到当前构建。
+第一阶段使用 e075；历史练习结果见 [阶段一验证摘要](docs/stage1/STAGE1_E075_VALIDATION.md)。二阶段保留 v2.4 组合，源码和53项策略参数以 [SOURCE_MANIFEST.json](stage2/SOURCE_MANIFEST.json)、[final.yaml](stage2/config/final.yaml) 为准：资源受阻恢复、观察绕行、资源到达概率、洁身条件防御、天使条件回血开启；通用移动争格恢复 `movement_blocked_recovery=false`。两种恢复开关不同，旧 `resource_blocked_recovery=true` 保留。版本沿革见 [二阶段说明](stage2/README.md)、[2026-10-30 复评](docs/stage2/STAGE2_DEEPSEEK_CONTENTION_TEST_20261030.md)，历史成绩不直接归到当前构建。

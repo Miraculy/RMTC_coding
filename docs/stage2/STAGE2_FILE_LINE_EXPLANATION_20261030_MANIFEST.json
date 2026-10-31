@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-30",
+  "timezone": "Asia/Shanghai",
+  "head": "fe20ce67898644b9e82f4eb7f4b658aefa634d2b",
+  "formal_entry": "run_contestant.sh A 2",
+  "formal_profile": "stage2/config/final.yaml",
+  "file_count": 22,
+  "source_lines": 5596,
+  "html_rows": 5596,
+  "profile_parameters": 53,
+  "static_named_gtests": {
+    "core": 137,
+    "ai": 14
+  },
+  "note_origins": {
+    "reused_matching_source": 304,
+    "stage2_specific": 1155,
+    "syntax_with_block_context": 4137
+  },
+  "files": {
+    "run_contestant.sh": {
+      "lines": 22,
+      "bytes": 1034,
+      "sha256": "44201ef98ebc1078e4584d58bd480577230c49f96106257e29d7c2c43f6d1a25"
+    },
+    "run_stage2_final.sh": {
+      "lines": 24,
+      "bytes": 1172,
+      "sha256": "43ef5f47ef2250038e67e14200154017de03de6ed872347f956791d2be5710a0"
+    },
+    "build_stage2.sh": {
+      "lines": 11,
+      "bytes": 489,
+      "sha256": "2ec79c2bef5daa6de2d90f6f3e2f84b63a151b88db38c353780b855e21fcd8cd"
+    },
+    "build_contestant.sh": {
+      "lines": 7,
+      "bytes": 340,
+      "sha256": "1243793ad75ca54eece6d4531134bd65f41efefdbd172e5f0e49d8c134285cd8"
+    },
+    "run_deepseek.sh": {
+      "lines": 18,
+      "bytes": 693,
+      "sha256": "2394584aaa6ebaf9e6c537d3e4a34b51ea89ab9030724817e4bcee251a29fde3"
+    },
+    "stage2/COLCON_IGNORE": {
+      "lines": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stage2/src/rmtc_bot/CMakeLists.txt": {
+      "lines": 35,
+      "bytes": 1551,
+      "sha256": "726f348ba342b03feb8b1e50720d0f793810c21f07db6635776c6aead77bcf09"
+    },
+    "stage2/src/rmtc_bot/package.xml": {
+      "lines": 12,
+      "bytes": 599,
+      "sha256": "87001d0e17108b8f3e2b4974ab143c2ae08d3dae8edb089abeff9070c7e011a8"
+    },
+    "stage2/config/final.yaml": {
+      "lines": 58,
+      "bytes": 1818,
+      "sha256": "372f72b5311d78fb789fefe0507c08474e7ce552005eb18c3e535cfa5ec0d2fb"
+    },
+    "stage2/src/rmtc_bot/config/contestant.yaml": {
+      "lines": 14,
+      "bytes": 318,
+      "sha256": "75c6fb59b16d294ebd956448f3f974d0b10d57c67421b8ed687f6d39360afbd6"
+    },
+    "stage2/src/rmtc_bot/include/rmtc_bot/core.hpp": {
+      "lines": 213,
+      "bytes": 11392,
+      "sha256": "416b01416b8ff875088fcbe1de15822c338b0bf67e23ad8a909c2741b5408252"
+    },
+    "stage2/src/rmtc_bot/src/node.cpp": {
+      "lines": 319,
+      "bytes": 22601,
+      "sha256": "12af62a50932ba8cd984251eeaa57daee96d79b30cb323368a08aed5d11a5e6a"
+    },
+    "stage2/src/rmtc_bot/src/core.cpp": {
+      "lines": 2300,
+      "bytes": 135012,
+      "sha256": "8d26531d26041820d9e98c614a824bffa33ec9d4fe14c4085242e3bbf335a11e"
+    },
+    "stage2/src/rmtc_bot/include/rmtc_bot/ai.hpp": {
+      "lines": 56,
+      "bytes": 1744,
+      "sha256": "8c9591b122c4b7fa61387f4a4460acfa69a94af0a93c569323ea2307860f12bb"
+    },
+    "stage2/src/rmtc_bot/src/ai.cpp": {
+      "lines": 205,
+      "bytes": 15723,
+      "sha256": "612566b19dca4b6045735db43bbb3e15d4f359c79e267a5075593029963d5aa7"
+    },
+    "stage2/src/rmtc_bot/test/core_test.cpp": {
+      "lines": 1732,
+      "bytes": 110689,
+      "sha256": "ad0e8c510fcc18389f120aec2b326bb9acd2e509c60663549675f5f799f1f23d"
+    },
+    "stage2/src/rmtc_bot/test/ai_test.cpp": {
+      "lines": 198,
+      "bytes": 14332,
+      "sha256": "bc3b052654fccb7cdbc13294a85aef81c8bb698339d17db39ddd67e54c21c62f"
+    },
+    "stage2/src/rmtc_bot/tools/ai_benchmark.cpp": {
+      "lines": 90,
+      "bytes": 6979,
+      "sha256": "e61c8acce9cb0e4564e28c960495d364280b3ec1c7d3f6e5cd8cdd403ab9aa4b"
+    },
+    "stage2/src/rmtc_bot/tools/event_revision_benchmark.cpp": {
+      "lines": 59,
+      "bytes": 4254,
+      "sha256": "b1989e82213b6ad53ff154ff28e6e5747f6d9855fb963c58a5ced99dbb58f986"
+    },
+    "tools/verify_stage2_release.py": {
+      "lines": 30,
+      "bytes": 1238,
+      "sha256": "cff11b1b16d451a6ddecfcfe183715835f32858de0fbaa6d5644f997bdc381a7"
+    },
+    "tools/stage2_release_smoke.py": {
+      "lines": 86,
+      "bytes": 4566,
+      "sha256": "35ed0e1851b7b6de9d37cda9ff48ab3f65a35dd9761c219dfb5a369adbe943e0"
+    },
+    "stage2/SOURCE_MANIFEST.json": {
+      "lines": 107,
+      "bytes": 8548,
+      "sha256": "1f99eea93f85697dd3519ac473dfd459f7b41a7496ce1863cbd9f0c242c77a8e"
+    }
+  },
+  "installed_binary_sha256_observed": "e154b18cb8da971bc2a282c57dab7172bc0530282dbac21401a73b8e656b0d97",
+  "artifacts": {
+    ".md": "deed3b8b78b3f67e473a1cd130b523790c46ef61f419bd05a4532358e8b1414e",
+    ".html": "cabef54fd1f5de11776cce68c920f1755622ef9f1e71c55a489e7afd899f9df6"
+  },
+  "validation": "源码哈希未变、tracked diff未变、每物理行有解释、HTML原文往返相等、行ID唯一/锚点有效；未构建/运行参赛程序或测试/比赛/模型。"
+}

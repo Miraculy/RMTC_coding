@@ -41,7 +41,7 @@
 1. [公平组完整实战、优化思路和逐场结果](STAGE2_FAIR_RESOURCE_REVIEW_20261026.md)
 2. [v1.2堡垒位置实现核验](STAGE2_V12_GEOMETRY_REVIEW_20261026.md)
 3. [新focus方案及竞争开关筛查](STAGE2_RESOURCE_FOCUS_SCREEN_20261026.md)
-4. [完整可移交归档](../test-results/stage2-v12-20261026/artifacts.tar.gz)
-5. [离线复核说明](../test-results/stage2-v12-20261026/README.md)
+4. [完整可移交归档](../../test-results/stage2-v12-20261026/artifacts.tar.gz)
+5. [离线复核说明](../../test-results/stage2-v12-20261026/README.md)
 
 本轮完成了明确方案的实现、检验和否决，没有形成可推广的普遍资源提升方案。后续研究应针对前期资源访问顺序及发现时机提出更有覆盖面的假设，配合完整闭环对照验证；不能把局部动作改进或堡垒规则兼容误当成资源分目标达成。旧长期目标保持暂停，成功方案交付后再获准探索下一项的约定仍然有效。

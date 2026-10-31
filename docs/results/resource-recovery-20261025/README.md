@@ -4,9 +4,9 @@
 
 - `results.json`：同一冻结程序的三组完整配对摘要、实际恢复触发、资源分/前二/满分指标、默认兼容性、全轮审计和缺帧排除记录。
 - `source-sha256.json`：与测试源码快照核对后的代码及开发工具校验值，路径相对仓库根。
-- 完整设计与局限见 [方案报告](../../RESOURCE_RECOVERY_20261025.md)，文献核对见 [文献复核](../../RESOURCE_LITERATURE_REVIEW_20261025.md)。
+- 完整设计与局限见 [方案报告](../../research/RESOURCE_RECOVERY_20261025.md)，文献核对见 [文献复核](../../research/RESOURCE_LITERATURE_REVIEW_20261025.md)。
 
-新增策略 `resource_blocked_recovery` 默认关闭。主组16对只有1对资源增加，不能声称绝大部分条件下明显进步。三个此前资源候选也保持关闭，前一轮结果见 [资源专项报告](../../RESOURCE_OPTIMIZATION_20261024.md)。
+新增策略 `resource_blocked_recovery` 默认关闭。主组16对只有1对资源增加，不能声称绝大部分条件下明显进步。三个此前资源候选也保持关闭，前一轮结果见 [资源专项报告](../../research/RESOURCE_OPTIMIZATION_20261024.md)。
 
 完整本车日志、裁判配置、冻结程序及离线复核脚本保存在本地 `test-results/resource-recovery-20261025/` 和相邻 `.tar.gz`；该目录及构建产物按仓库 `.gitignore` 排除，不随 Git 推送。归档 SHA-256 记录在 results.json 中。只检出远程仓库可以编译并运行源码测试；独立重新审计原始比赛需要完整归档，不能仅凭这些摘要完成。
 

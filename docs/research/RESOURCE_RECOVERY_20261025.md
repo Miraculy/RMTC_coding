@@ -15,7 +15,7 @@
 
 ## 新增用户文献资料
 
-已核实资料中的竞争性 Orienteering、时变奖励搜索和局部对手建模依据，并单独形成 `docs/RESOURCE_LITERATURE_REVIEW_20261025.md`。其中 P2 的旧标题及 87%–95% 属 v1，当前 v2 已更名；等级冲突机制不能移用于 RMTC。源码已存在 BFS、120 资源封顶、多站规划和可选 ETA/beam，不把重复实现算作新优化。资料的嵌入任务模板作为建议，不扩张本轮逐方案授权。
+已核实资料中的竞争性 Orienteering、时变奖励搜索和局部对手建模依据，并单独形成 `docs/research/RESOURCE_LITERATURE_REVIEW_20261025.md`。其中 P2 的旧标题及 87%–95% 属 v1，当前 v2 已更名；等级冲突机制不能移用于 RMTC。源码已存在 BFS、120 资源封顶、多站规划和可选 ETA/beam，不把重复实现算作新优化。资料的嵌入任务模板作为建议，不扩张本轮逐方案授权。
 
 ## 全链路判断与实施次序
 
@@ -121,7 +121,7 @@
 
 ## 交付与使用
 
-Git 仓库另收录 [轻量结果与源码校验](results/resource-recovery-20261025/README.md)。下列完整 `test-results/` 归档依照仓库忽略规则保存在本地，不包含在 Git 检出内容中。
+Git 仓库另收录 [轻量结果与源码校验](../results/resource-recovery-20261025/README.md)。下列完整 `test-results/` 归档依照仓库忽略规则保存在本地，不包含在 Git 检出内容中。
 
 - 方案代码：`src/rmtc_bot/include/rmtc_bot/core.hpp`、`src/rmtc_bot/src/core.cpp`、`src/rmtc_bot/src/node.cpp`。
 - 边界回归：`src/rmtc_bot/test/core_test.cpp` 中七项新增测试。

@@ -18,7 +18,7 @@
 
 原版确实主要存在“见过却拿不到”的缺口；联合版的剩余缺口同时包含发现和采集，不能继续无条件提高已知资源优先级。反例1019/30%中，正式版见200R/采160R，入口风险v4见160R/采100R，既漏区域又降低采集兑现。
 
-逐图数据、观测时点和原日志哈希见[复算证据](/home/miraculy/docker/ros2/contestant_ws/docs/STAGE1_PAPER_ALGORITHM_REVIEW_EVIDENCE_20261025.json)。已有215图、各版本失败结果的开发属性不变，预留3000系列没有生成或查看。
+逐图数据、观测时点和原日志哈希见[复算证据](/home/miraculy/docker/ros2/contestant_ws/docs/stage1/STAGE1_PAPER_ALGORITHM_REVIEW_EVIDENCE_20261025.json)。已有215图、各版本失败结果的开发属性不变，预留3000系列没有生成或查看。
 
 ## 2. 对附件算法逐项评估
 

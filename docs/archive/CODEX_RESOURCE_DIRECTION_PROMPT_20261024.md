@@ -51,11 +51,11 @@
 - `AGENTS.md`（最新状态；注意它仍可能停在旧 build）
 - `README.md`
 - `VALIDATION.md` 末尾
-- `docs/NEW_IDEA_IMPLEMENTATION.md`
-- `docs/CODEX_REVIEW_v1.1.md`
-- `docs/CODEX_NEW_IDEAS_v1.1.md`
-- `docs/STRATEGY.md`
-- `docs/RULES_V1_1.md`
+- `docs/research/NEW_IDEA_IMPLEMENTATION.md`
+- `docs/archive/CODEX_REVIEW_v1.1.md`
+- `docs/archive/CODEX_NEW_IDEAS_v1.1.md`
+- `docs/stage2/STRATEGY.md`
+- `docs/rules/RULES_V1_1.md`
 - `src/rmtc_bot/include/rmtc_bot/core.hpp`
 - `src/rmtc_bot/src/core.cpp`
 - `src/rmtc_bot/src/node.cpp`

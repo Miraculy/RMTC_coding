@@ -85,9 +85,9 @@
 
 ## 实现入口
 
-- [第二阶段启动入口](../run_stage2_final.sh)和[正式策略配置](../stage2/config/final.yaml)。
-- [node.cpp](../stage2/src/rmtc_bot/src/node.cpp)：帧分流、AI 结果收取与公告提交、动作发布和日志。
-- [core.cpp](../stage2/src/rmtc_bot/src/core.cpp)：世界记忆、目标路线及即时动作评估。
-- [ai.cpp](../stage2/src/rmtc_bot/src/ai.cpp)：后台 HTTP、去重、预算、重试与有界结构修复。
+- [第二阶段启动入口](../../run_stage2_final.sh)和[正式策略配置](../../stage2/config/final.yaml)。
+- [node.cpp](../../stage2/src/rmtc_bot/src/node.cpp)：帧分流、AI 结果收取与公告提交、动作发布和日志。
+- [core.cpp](../../stage2/src/rmtc_bot/src/core.cpp)：世界记忆、目标路线及即时动作评估。
+- [ai.cpp](../../stage2/src/rmtc_bot/src/ai.cpp)：后台 HTTP、去重、预算、重试与有界结构修复。
 
 本文为当前实现的运行说明，不新增比赛、模型调用或测试结论，也不改变算法、Prompt、配置及源码。
